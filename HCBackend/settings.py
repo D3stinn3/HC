@@ -38,7 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'HCUser',
-    'HCProduct'
+    'HCProduct',
+    'HCCart',
+    'HCOrder',
 ]
 
 MIDDLEWARE = [
