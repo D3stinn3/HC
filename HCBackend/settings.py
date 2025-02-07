@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'HCProduct',
     'HCCart',
     'HCOrder',
+    'HCShop'
 ]
 
 MIDDLEWARE = [
