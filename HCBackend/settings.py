@@ -104,6 +104,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Auth User Config
+AUTH_USER_MODEL = "HCUser.HomeChoiceUser"
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
