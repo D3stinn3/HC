@@ -6,8 +6,6 @@ class ResponseSchema(BaseModel):
     success: bool
     message: str
     data: Any = None
-    
-
 class SignupSchema(BaseModel):
     email: str
     username: str
