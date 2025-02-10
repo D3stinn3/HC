@@ -12,15 +12,17 @@ from ninja_jwt.controller import TokenObtainPairController
 api = NinjaExtraAPI()
 
 
-@api_controller("token", tags=["Auth"])
-class MyTokenController(TokenObtainPairController):
-    """Controller for obtaining and refreshing JWT tokens."""
+# @api_controller("token", tags=["Auth"])
+# class MyTokenController(TokenObtainPairController):
+#     """Controller for obtaining and refreshing JWT tokens."""
 
-    pass  # Inherits obtain_token and refresh_token methods from TokenObtainPairController
+#     pass  # Inherits obtain_token and refresh_token methods from TokenObtainPairController
 
 
-# Register the controller with the API instance
-api.register_controllers(MyTokenController)
+# # Register the controller with the API instance
+# api.register_controllers(MyTokenController)
+
+api.register_controllers(NinjaJWTDefaultController)
 
 """Intrinsic Data Handling"""
 
