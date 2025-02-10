@@ -149,3 +149,15 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# CORS Security
+CORS_ALLOWED_ORIGINS = [
+    'https://homechoice-production.up.railway.app',
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+# CSRF Trusted Origins
+CSRF_TRUSTED_ORIGINS = [
+    'https://homechoice-production.up.railway.app',
+]
