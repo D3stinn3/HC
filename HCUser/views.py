@@ -6,6 +6,7 @@ from .models import HomeChoiceUser
 from django.contrib.auth import authenticate, logout, login
 from ninja_jwt.controller import NinjaJWTDefaultController
 from ninja_jwt.controller import TokenObtainPairController
+from django.middleware.csrf import get_token
 
 """NinjaExtra API FOR HomeChoice"""
 
@@ -16,17 +17,20 @@ api.register_controllers(NinjaJWTDefaultController)
 """Intrinsic Data Handling"""
 
 
-@api.get("/hello", tags=["Tests"])
+@api.get("/hello", tags=["tests"])
 def hello(request, name: str = "World"):
     return {"message": f"Hello, {name}!"}
 
 
-@api.get("/add", tags=["Tests"])
+@api.get("/add", tags=["tests"])
 def add(request, a: int, b: int):
     return {"result": a + b}
 
 
 """Extrinsic Data Handling"""
+@api.get("/get_csrf_token")
+def get_csrf_token(request):
+    return {'csrf_token': get_token(request)}
 
 """User SignUp"""
 
