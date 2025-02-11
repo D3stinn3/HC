@@ -8,6 +8,7 @@ from ninja_jwt.controller import NinjaJWTDefaultController
 from ninja_jwt.controller import TokenObtainPairController
 from django.middleware.csrf import get_token
 
+
 """NinjaExtra API FOR HomeChoice"""
 
 api = NinjaExtraAPI()
