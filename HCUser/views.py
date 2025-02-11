@@ -11,17 +11,6 @@ from ninja_jwt.controller import TokenObtainPairController
 
 api = NinjaExtraAPI()
 
-
-# @api_controller("token", tags=["Auth"])
-# class MyTokenController(TokenObtainPairController):
-#     """Controller for obtaining and refreshing JWT tokens."""
-
-#     pass  # Inherits obtain_token and refresh_token methods from TokenObtainPairController
-
-
-# # Register the controller with the API instance
-# api.register_controllers(MyTokenController)
-
 api.register_controllers(NinjaJWTDefaultController)
 
 """Intrinsic Data Handling"""
@@ -42,7 +31,7 @@ def add(request, a: int, b: int):
 """User SignUp"""
 
 
-@api.post("/signup", response=ResponseSchema, tags=["User"])
+@api.post("/signup", response=ResponseSchema, tags=["user"])
 def signup(request, payload: SignupSchema):
 
     if HomeChoiceUser.objects.filter(email=payload.email).exists():
@@ -69,7 +58,7 @@ def signup(request, payload: SignupSchema):
 """User Login"""
 
 
-@api.post("/login/homechoice-user", response=ResponseSchema, tags=["User"])
+@api.post("/login/homechoice-user", response=ResponseSchema, tags=["user"])
 def user_login(request, payload: LoginSchema):
     user = authenticate(request, username=payload.email, password=payload.password)  # Use authenticate
 
@@ -91,7 +80,7 @@ def user_login(request, payload: LoginSchema):
 """Admin Login"""
 
 
-@api.post("/login/homechoice-admin", response=ResponseSchema, tags=["User"])
+@api.post("/login/homechoice-admin", response=ResponseSchema, tags=["user"])
 def admin_login(request, payload: LoginSchema):
     user = authenticate(request, username=payload.email, password=payload.password)  # Use authenticate
 
@@ -112,7 +101,7 @@ def admin_login(request, payload: LoginSchema):
 
 """User Logout"""
 
-@api.post("/logout", response=ResponseSchema, tags=["User"])
+@api.post("/logout", response=ResponseSchema, tags=["user"])
 def user_logout(request):
 
     user_ = request.user
