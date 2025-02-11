@@ -3,7 +3,7 @@ from ninja_extra import NinjaExtraAPI, api_controller, http_get
 from ninja_extra.permissions import IsAuthenticated
 from .schemas import SignupSchema, ResponseSchema, LoginSchema
 from .models import HomeChoiceUser
-from django.contrib.auth import authenticate, logout
+from django.contrib.auth import authenticate, logout, login
 from ninja_jwt.controller import NinjaJWTDefaultController
 from ninja_jwt.controller import TokenObtainPairController
 
@@ -71,10 +71,10 @@ def signup(request, payload: SignupSchema):
 
 @api.post("/login/homechoice-user", response=ResponseSchema, tags=["User"])
 def user_login(request, payload: LoginSchema):
-
-    user = authenticate(email=payload.email, password=payload.password)
+    user = authenticate(request, username=payload.email, password=payload.password)  # Use authenticate
 
     if user is not None and not user.is_staff:
+        login(request, user)  # Log in the authenticated user
         return {
             "success": True,
             "message": "User login successful.",
@@ -93,10 +93,10 @@ def user_login(request, payload: LoginSchema):
 
 @api.post("/login/homechoice-admin", response=ResponseSchema, tags=["User"])
 def admin_login(request, payload: LoginSchema):
-
-    user = authenticate(email=payload.email, password=payload.password)
+    user = authenticate(request, username=payload.email, password=payload.password)  # Use authenticate
 
     if user is not None and user.is_staff:
+        login(request, user)  # Log in the authenticated admin
         return {
             "success": True,
             "message": "Admin login successful.",
