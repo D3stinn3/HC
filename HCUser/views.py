@@ -7,6 +7,7 @@ from django.contrib.auth import authenticate, logout, login
 from ninja_jwt.controller import NinjaJWTDefaultController
 from ninja_jwt.controller import TokenObtainPairController
 from django.middleware.csrf import get_token
+from django.shortcuts import get_object_or_404
 
 
 """NinjaExtra API FOR HomeChoice"""
@@ -120,3 +121,20 @@ def user_logout(request):
         "message": "User is not authenticated.",
         "data": {"email": user_.email, "username": user_.username},
     }
+    
+"""Delete User"""
+
+@api.delete("/delete_user", response=ResponseSchema, tags=["user"])
+def delete_user(request, email: str):
+    if not request.user.is_authenticated:
+        return {"success": False, "message": "Authentication required."}
+
+    if email and request.user.is_staff:
+        # Admin deleting another user
+        user = get_object_or_404(HomeChoiceUser, email=email)
+    else:
+        # Normal user deleting their own account
+        user = request.user
+
+    user.delete()
+    return {"success": True, "message": "User deleted successfully."}
