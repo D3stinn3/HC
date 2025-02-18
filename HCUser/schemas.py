@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 from typing import Any, Optional, List, Dict
 
 
@@ -10,10 +10,12 @@ class ResponseSchema(BaseModel):
 class SignupSchema(BaseModel):
     email: str
     username: str
-    password: str
+    password: Optional[str] = Field(None, description="Required for traditional users, ignored for OAuth users")
+    clerkId: Optional[str] = Field(None, description="Required for OAuth users, ignored for traditional users")
     is_staff: bool = False
     is_superuser: bool = False
     
 class LoginSchema(BaseModel):
     email: str
-    password: str
+    password: Optional[str] = Field(None, description="Required for traditional login, ignored for OAuth users")
+    clerkId: Optional[str] = Field(None, description="Required for OAuth users, ignored for traditional login")

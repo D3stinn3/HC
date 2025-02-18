@@ -37,28 +37,75 @@ def get_csrf_token(request):
 """User SignUp"""
 
 
+# @api.post("/signup", response=ResponseSchema, tags=["user"])
+# def signup(request, payload: SignupSchema):
+
+#     if HomeChoiceUser.objects.filter(email=payload.email).exists():
+#         return {"success": False, "message": "Email already registered."}
+
+#     if HomeChoiceUser.objects.filter(username=payload.username).exists():
+#         return {"success": False, "message": "Username already taken."}
+
+#     user = HomeChoiceUser.objects.create_user(
+#         email=payload.email,
+#         username=payload.username,
+#         password=payload.password,
+#         is_staff=payload.is_staff,
+#         is_superuser=payload.is_superuser,
+#     )
+
+#     return {
+#         "success": True,
+#         "message": "User registered successfully.",
+#         "data": {"email": user.email},
+#     }
+    
 @api.post("/signup", response=ResponseSchema, tags=["user"])
 def signup(request, payload: SignupSchema):
+    """
+    Handles signup for both traditional users (with password)
+    and OAuth-based users (with Clerk ID).
+    """
 
-    if HomeChoiceUser.objects.filter(email=payload.email).exists():
-        return {"success": False, "message": "Email already registered."}
+    # 🔹 Check if the user already exists (by email)
+    existing_user = HomeChoiceUser.objects.filter(email=payload.email).first()
 
+    if existing_user:
+        # 🔸 If the user exists but has no Clerk ID, allow linking
+        if not existing_user.clerkId and payload.clerkId:
+            existing_user.clerkId = payload.clerkId
+            existing_user.save()
+            return {
+                "success": True,
+                "message": "OAuth user linked successfully.",
+                "data": {"email": existing_user.email, "clerkId": existing_user.clerkId},
+            }
+
+        return {"success": False, "message": "Email already registered. Please log in."}
+
+    # 🔹 Check if the username is already taken
     if HomeChoiceUser.objects.filter(username=payload.username).exists():
         return {"success": False, "message": "Username already taken."}
 
+    # 🔸 If it's a new user, determine whether to require a password
+    password = payload.password if payload.password else None  # No password for OAuth users
+
+    # 🔹 Create a new user (either traditional or OAuth-based)
     user = HomeChoiceUser.objects.create_user(
         email=payload.email,
         username=payload.username,
-        password=payload.password,
+        password=password,  # Only set password for traditional users
         is_staff=payload.is_staff,
         is_superuser=payload.is_superuser,
+        clerkId=payload.clerkId,  # Save Clerk ID for OAuth users
     )
 
     return {
         "success": True,
         "message": "User registered successfully.",
-        "data": {"email": user.email},
+        "data": {"email": user.email, "clerkId": user.clerkId},
     }
+
 
 
 """User Login"""
@@ -113,12 +160,33 @@ def user_login(request, payload: LoginSchema):
 """Admin Login"""
 
 
+# @api.post("/login/homechoice-admin", response=ResponseSchema, tags=["user"])
+# def admin_login(request, payload: LoginSchema):
+#     user = authenticate(request, username=payload.email, password=payload.password)  # Use authenticate
+
+#     if user is not None and user.is_staff:
+#         login(request, user)  # Log in the authenticated admin
+#         return {
+#             "success": True,
+#             "message": "Admin login successful.",
+#             "data": {
+#                 "email": user.email,
+#                 "user_id": user.pk,
+#                 "username": user.username,
+#             },
+#         }
+
+#     return {"success": False, "message": "Invalid credentials or not an admin."}
+
 @api.post("/login/homechoice-admin", response=ResponseSchema, tags=["user"])
 def admin_login(request, payload: LoginSchema):
-    user = authenticate(request, username=payload.email, password=payload.password)  # Use authenticate
+    """Allow both password-based and OAuth-based admin logins using clerkId."""
+
+    # 🔹 Try authenticating with email & password (traditional admin login)
+    user = authenticate(request, username=payload.email, password=payload.password)
 
     if user is not None and user.is_staff:
-        login(request, user)  # Log in the authenticated admin
+        login(request, user)
         return {
             "success": True,
             "message": "Admin login successful.",
@@ -126,10 +194,53 @@ def admin_login(request, payload: LoginSchema):
                 "email": user.email,
                 "user_id": user.pk,
                 "username": user.username,
+                "clerkId": user.clerkId,  # Include clerkId in response
             },
         }
 
-    return {"success": False, "message": "Invalid credentials or not an admin."}
+    # **OAuth admins: Check if user exists and has a clerkId**
+    try:
+        user = HomeChoiceUser.objects.get(email=payload.email)
+
+        # 🔹 Ensure only `is_staff=True` users can log in as admin
+        if not user.is_staff:
+            return {"success": False, "message": "User is not an admin."}
+
+        # ✅ If user exists with Clerk ID, allow login without password
+        if user.clerkId:
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')  # Manually log in OAuth user
+            return {
+                "success": True,
+                "message": "OAuth admin login successful.",
+                "data": {
+                    "email": user.email,
+                    "user_id": user.pk,
+                    "username": user.username,
+                    "clerkId": user.clerkId,
+                },
+            }
+
+        # 🔹 If user exists but no Clerk ID, allow linking if clerkId is provided
+        if not user.clerkId and payload.clerkId:
+            user.clerkId = payload.clerkId  # Link Clerk ID to existing admin
+            user.save()
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            return {
+                "success": True,
+                "message": "OAuth admin linked and logged in successfully.",
+                "data": {
+                    "email": user.email,
+                    "user_id": user.pk,
+                    "username": user.username,
+                    "clerkId": user.clerkId,
+                },
+            }
+
+        # If user exists but has no Clerk ID and no OAuth ID provided, reject login
+        return {"success": False, "message": "Password required for non-OAuth admins."}
+
+    except HomeChoiceUser.DoesNotExist:
+        return {"success": False, "message": "Admin not found. Please contact support."}
 
 
 """User Logout"""
