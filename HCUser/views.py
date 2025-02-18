@@ -136,19 +136,33 @@ def admin_login(request, payload: LoginSchema):
 
 @api.post("/logout", response=ResponseSchema, tags=["user"])
 def user_logout(request):
+    """Handles logout for both OAuth (Clerk) users and traditional Django users."""
 
     user_ = request.user
 
+    # Check if the user is authenticated
     if request.user.is_authenticated:
+        # If the user has a Clerk ID, they should be logged out from Clerk separately
+        if hasattr(user_, "clerkId") and user_.clerkId:
+            return {
+                "success": True,
+                "message": "OAuth user logout detected. Logout via Clerk is required.",
+                "data": {
+                    "email": user_.email,
+                    "username": user_.username,
+                    "clerkId": user_.clerkId,
+                },
+            }
+
+        # Normal Django session-based logout
         logout(request)
         return {"success": True, "message": "Logout successful."}
 
     return {
         "success": False,
         "message": "User is not authenticated.",
-        "data": {"email": user_.email, "username": user_.username},
     }
-    
+
 """Delete User"""
 
 @api.delete("/delete_user", response=ResponseSchema, tags=["user"])
