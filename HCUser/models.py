@@ -10,6 +10,7 @@ class HomeChoiceUser(AbstractUser):
     phone_number = models.CharField(max_length=20, null=True, blank=True)
     biography = models.CharField(max_length=255, null=True, blank=True)
     address = models.CharField(max_length=255, null=True, blank=True)
+    clerkId = models.CharField(max_length=255, null=True, blank=True)
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']

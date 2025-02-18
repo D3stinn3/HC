@@ -66,10 +66,13 @@ def signup(request, payload: SignupSchema):
 
 @api.post("/login/homechoice-user", response=ResponseSchema, tags=["user"])
 def user_login(request, payload: LoginSchema):
-    user = authenticate(request, username=payload.email, password=payload.password)  # Use authenticate
+    """Allow both password-based and OAuth-based logins using clerkId."""
+    
+    # Try authenticating with email & password (traditional login)
+    user = authenticate(request, username=payload.email, password=payload.password)
 
     if user is not None and not user.is_staff:
-        login(request, user)  # Log in the authenticated user
+        login(request, user)
         return {
             "success": True,
             "message": "User login successful.",
@@ -77,10 +80,34 @@ def user_login(request, payload: LoginSchema):
                 "email": user.email,
                 "user_id": user.pk,
                 "username": user.username,
+                "clerkId": user.clerkId,  # Include clerkId in response
             },
         }
 
-    return {"success": False, "message": "Invalid credentials or not a common user."}
+    # **OAuth users: Check if user exists and has a clerkId**
+    try:
+        user = HomeChoiceUser.objects.get(email=payload.email)
+        
+        if user.clerkId:  # ✅ OAuth user (clerkId is present)
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')  # Manually log in
+            return {
+                "success": True,
+                "message": "OAuth user login successful.",
+                "data": {
+                    "email": user.email,
+                    "user_id": user.pk,
+                    "username": user.username,
+                    "clerkId": user.clerkId,  # Include clerkId in response
+                },
+            }
+
+        # If user exists but has no clerkId, reject login
+        return {"success": False, "message": "Password required for non-OAuth users."}
+
+    except HomeChoiceUser.DoesNotExist:
+        return {"success": False, "message": "User not found. Please sign up first."}
+
+
 
 
 """Admin Login"""
