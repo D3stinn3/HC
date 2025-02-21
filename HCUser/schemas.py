@@ -9,7 +9,7 @@ class ResponseSchema(BaseModel):
 
 class LoginSchema(BaseModel):
     email: str
-    password: str
+    password: Optional[str] = Field(None, description="Required for OAuth users, ignored for traditional users")
     
 class SignupSchema(BaseModel):
     email: str
