@@ -14,7 +14,7 @@ class LoginSchema(BaseModel):
 class SignupSchema(BaseModel):
     email: str
     username: str
-    password: str
+    password: Optional[str] = Field(None, description="Required for OAuth users, ignored for traditional users")
     clerkId: Optional[str] = Field(None, description="Required for OAuth users, ignored for traditional users")
     is_staff: bool = False
     is_superuser: bool = False
