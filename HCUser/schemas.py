@@ -7,15 +7,15 @@ class ResponseSchema(BaseModel):
     message: str
     data: Any = None
 
+class LoginSchema(BaseModel):
+    email: str
+    password: str
+    
 class SignupSchema(BaseModel):
     email: str
     username: str
-    password: Optional[str] = Field(None, description="Required for traditional users, ignored for OAuth users")
+    password: str
     clerkId: Optional[str] = Field(None, description="Required for OAuth users, ignored for traditional users")
     is_staff: bool = False
     is_superuser: bool = False
-    
-class LoginSchema(BaseModel):
-    email: str
-    password: Optional[str] = Field(None, description="Required for traditional login, ignored for OAuth users")
-    clerkId: Optional[str] = Field(None, description="Required for OAuth users, ignored for traditional login")
+

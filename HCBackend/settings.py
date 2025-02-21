@@ -83,23 +83,23 @@ WSGI_APPLICATION = 'HCBackend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'railway', 
-        'USER': 'postgres',
-        'PASSWORD': 'IdsfwJfVMtFgjfEIwrfptctPKFJhEqFH',
-        'HOST': 'postgres-is3a.railway.internal', 
-        'PORT': 5432,
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'railway', 
+#         'USER': 'postgres',
+#         'PASSWORD': 'DbahvlMJaxZnflbatiZNzGnqbjTRfgne',
+#         'HOST': 'postgres.railway.internal', 
+#         'PORT': 5432,
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -150,16 +150,14 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CORS Security
-CORS_ALLOWED_ORIGINS = [
-    'https://homechoice-production.up.railway.app',
-    'https://homechoice-depot.vercel.app'
-]
+# # CORS Security
+# CORS_ALLOWED_ORIGINS = [
+#     'https://homechoice-production.up.railway.app',
+# ]
 
-CORS_ALLOW_CREDENTIALS = True
+# CORS_ALLOW_CREDENTIALS = True
 
-# CSRF Trusted Origins
-CSRF_TRUSTED_ORIGINS = [
-    'https://homechoice-production.up.railway.app',
-    'https://homechoice-depot.vercel.app'
-]
+# # CSRF Trusted Origins
+# CSRF_TRUSTED_ORIGINS = [
+#     'https://homechoice-production.up.railway.app',
+# ]
