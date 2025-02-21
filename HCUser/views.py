@@ -131,9 +131,9 @@ def user_login(request, payload: LoginSchema):
         return {"success": False, "message": "User not found. Please sign up first."}
 
     # Use Clerk ID as the password for OAuth users
-    password_to_use = user.clerkId if user.clerkId else payload.password
+    password_ = user.clerkId if user.clerkId else payload.password
 
-    user = authenticate(request, username=payload.email, password=password_to_use)
+    user = authenticate(request, username=payload.email, password=password_)
 
     if user is not None and not user.is_staff:
         login(request, user)
