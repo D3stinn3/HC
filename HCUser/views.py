@@ -8,6 +8,8 @@ from ninja_jwt.controller import NinjaJWTDefaultController
 from ninja_jwt.controller import TokenObtainPairController
 from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404
+from .auth_util import authenticate_clerk_user
+from django.contrib.auth import get_user_model
 
 
 """NinjaExtra API FOR HomeChoice"""
@@ -52,6 +54,7 @@ def get_csrf_token(request):
 #         password=payload.password,
 #         is_staff=payload.is_staff,
 #         is_superuser=payload.is_superuser,
+#         clerkId=payload.clerkId
 #     )
 
 #     return {
@@ -59,64 +62,78 @@ def get_csrf_token(request):
 #         "message": "User registered successfully.",
 #         "data": {"email": user.email},
 #     }
-    
+
+
 @api.post("/signup", response=ResponseSchema, tags=["user"])
 def signup(request, payload: SignupSchema):
-    """
-    Handles signup for both traditional users (with password)
-    and OAuth-based users (with Clerk ID).
-    """
 
-    # 🔹 Check if the user already exists (by email)
-    existing_user = HomeChoiceUser.objects.filter(email=payload.email).first()
+    if HomeChoiceUser.objects.filter(email=payload.email).exists():
+        return {"success": False, "message": "Email already registered."}
 
-    if existing_user:
-        # 🔸 If the user exists but has no Clerk ID, allow linking
-        if not existing_user.clerkId and payload.clerkId:
-            existing_user.clerkId = payload.clerkId
-            existing_user.save()
-            return {
-                "success": True,
-                "message": "OAuth user linked successfully.",
-                "data": {"email": existing_user.email, "clerkId": existing_user.clerkId},
-            }
-
-        return {"success": False, "message": "Email already registered. Please log in."}
-
-    # 🔹 Check if the username is already taken
     if HomeChoiceUser.objects.filter(username=payload.username).exists():
         return {"success": False, "message": "Username already taken."}
 
-    # 🔸 If it's a new user, determine whether to require a password
-    password = payload.password if payload.password else None  # No password for OAuth users
+    # Use Clerk ID as the password for OAuth users
+    if payload.clerkId:
+        generated_password = payload.clerkId
+    else:
+        generated_password = payload.password  # Use provided password for traditional users
 
-    # 🔹 Create a new user (either traditional or OAuth-based)
+    # Create the user with the generated password
     user = HomeChoiceUser.objects.create_user(
         email=payload.email,
         username=payload.username,
-        password=password,  # Only set password for traditional users
+        password=generated_password,  # Either Clerk ID or user-provided password
         is_staff=payload.is_staff,
         is_superuser=payload.is_superuser,
-        clerkId=payload.clerkId,  # Save Clerk ID for OAuth users
+        clerkId=payload.clerkId
     )
 
     return {
         "success": True,
         "message": "User registered successfully.",
-        "data": {"email": user.email, "clerkId": user.clerkId},
+        "data": {"email": user.email},
     }
-
-
 
 """User Login"""
 
 
+# @api.post("/login/homechoice-user", response=ResponseSchema, tags=["user"])
+# def user_login(request, payload: LoginSchema):
+#     user = authenticate(request, username=payload.email, password=payload.password)  # Use authenticate
+
+#     if user is not None and not user.is_staff:
+#         login(request, user)  # Log in the authenticated user
+#         return {
+#             "success": True,
+#             "message": "User login successful.",
+#             "data": {
+#                 "email": user.email,
+#                 "user_id": user.pk,
+#                 "username": user.username,
+#             },
+#         }
+
+#     return {"success": False, "message": "Invalid credentials or not a common user."}
+
 @api.post("/login/homechoice-user", response=ResponseSchema, tags=["user"])
 def user_login(request, payload: LoginSchema):
-    """Allow both password-based and OAuth-based logins using clerkId."""
-    
-    # Try authenticating with email & password (traditional login)
-    user = authenticate(request, username=payload.email, password=payload.password)
+    """
+    Logs in users:
+    - Traditional users authenticate normally.
+    - OAuth users use Clerk ID as password.
+    """
+
+    # Check if user exists
+    user = HomeChoiceUser.objects.filter(email=payload.email).first()
+
+    if not user:
+        return {"success": False, "message": "User not found. Please sign up first."}
+
+    # Use Clerk ID as the password for OAuth users
+    password_to_use = user.clerkId if user.clerkId else payload.password
+
+    user = authenticate(request, username=payload.email, password=password_to_use)
 
     if user is not None and not user.is_staff:
         login(request, user)
@@ -127,33 +144,10 @@ def user_login(request, payload: LoginSchema):
                 "email": user.email,
                 "user_id": user.pk,
                 "username": user.username,
-                "clerkId": user.clerkId,  # Include clerkId in response
             },
         }
 
-    # **OAuth users: Check if user exists and has a clerkId**
-    try:
-        user = HomeChoiceUser.objects.get(email=payload.email)
-        
-        if user.clerkId:  # ✅ OAuth user (clerkId is present)
-            login(request, user, backend='django.contrib.auth.backends.ModelBackend')  # Manually log in
-            return {
-                "success": True,
-                "message": "OAuth user login successful.",
-                "data": {
-                    "email": user.email,
-                    "user_id": user.pk,
-                    "username": user.username,
-                    "clerkId": user.clerkId,  # Include clerkId in response
-                },
-            }
-
-        # If user exists but has no clerkId, reject login
-        return {"success": False, "message": "Password required for non-OAuth users."}
-
-    except HomeChoiceUser.DoesNotExist:
-        return {"success": False, "message": "User not found. Please sign up first."}
-
+    return {"success": False, "message": "Invalid credentials or not a common user."}
 
 
 
@@ -180,10 +174,22 @@ def user_login(request, payload: LoginSchema):
 
 @api.post("/login/homechoice-admin", response=ResponseSchema, tags=["user"])
 def admin_login(request, payload: LoginSchema):
-    """Allow both password-based and OAuth-based admin logins using clerkId."""
+    """
+    Logs in admins:
+    - Traditional admin users authenticate normally.
+    - OAuth admins use Clerk ID as password.
+    """
 
-    # 🔹 Try authenticating with email & password (traditional admin login)
-    user = authenticate(request, username=payload.email, password=payload.password)
+    # Check if user exists
+    user = HomeChoiceUser.objects.filter(email=payload.email).first()
+
+    if not user:
+        return {"success": False, "message": "User not found. Please sign up first."}
+
+    # Use Clerk ID as the password for OAuth admins
+    password_ = user.clerkId if user.clerkId else payload.password
+
+    user = authenticate(request, username=payload.email, password=password_)
 
     if user is not None and user.is_staff:
         login(request, user)
@@ -194,85 +200,29 @@ def admin_login(request, payload: LoginSchema):
                 "email": user.email,
                 "user_id": user.pk,
                 "username": user.username,
-                "clerkId": user.clerkId,  # Include clerkId in response
             },
         }
 
-    # **OAuth admins: Check if user exists and has a clerkId**
-    try:
-        user = HomeChoiceUser.objects.get(email=payload.email)
-
-        # 🔹 Ensure only `is_staff=True` users can log in as admin
-        if not user.is_staff:
-            return {"success": False, "message": "User is not an admin."}
-
-        # ✅ If user exists with Clerk ID, allow login without password
-        if user.clerkId:
-            login(request, user, backend='django.contrib.auth.backends.ModelBackend')  # Manually log in OAuth user
-            return {
-                "success": True,
-                "message": "OAuth admin login successful.",
-                "data": {
-                    "email": user.email,
-                    "user_id": user.pk,
-                    "username": user.username,
-                    "clerkId": user.clerkId,
-                },
-            }
-
-        # 🔹 If user exists but no Clerk ID, allow linking if clerkId is provided
-        if not user.clerkId and payload.clerkId:
-            user.clerkId = payload.clerkId  # Link Clerk ID to existing admin
-            user.save()
-            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-            return {
-                "success": True,
-                "message": "OAuth admin linked and logged in successfully.",
-                "data": {
-                    "email": user.email,
-                    "user_id": user.pk,
-                    "username": user.username,
-                    "clerkId": user.clerkId,
-                },
-            }
-
-        # If user exists but has no Clerk ID and no OAuth ID provided, reject login
-        return {"success": False, "message": "Password required for non-OAuth admins."}
-
-    except HomeChoiceUser.DoesNotExist:
-        return {"success": False, "message": "Admin not found. Please contact support."}
+    return {"success": False, "message": "Invalid credentials or not an admin."}
 
 
 """User Logout"""
 
 @api.post("/logout", response=ResponseSchema, tags=["user"])
 def user_logout(request):
-    """Handles logout for both OAuth (Clerk) users and traditional Django users."""
 
     user_ = request.user
 
-    # Check if the user is authenticated
     if request.user.is_authenticated:
-        # If the user has a Clerk ID, they should be logged out from Clerk separately
-        if hasattr(user_, "clerkId") and user_.clerkId:
-            return {
-                "success": True,
-                "message": "OAuth user logout detected. Logout via Clerk is required.",
-                "data": {
-                    "email": user_.email,
-                    "username": user_.username,
-                    "clerkId": user_.clerkId,
-                },
-            }
-
-        # Normal Django session-based logout
         logout(request)
         return {"success": True, "message": "Logout successful."}
 
     return {
         "success": False,
         "message": "User is not authenticated.",
+        "data": {"email": user_.email, "username": user_.username},
     }
+    
 
 """Delete User"""
 
