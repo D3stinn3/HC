@@ -31,9 +31,6 @@ api = NinjaExtraAPI()
 csrf_cache = caches["default"]
 
 """Intrinsic Data Handling"""
-# @api.get("/get_csrf_token")
-# def get_csrf_token(request):
-#     return {'csrf_token': get_token(request)}
 
 @api.get("/hello", tags=["tests"])
 def hello(request, name: str = "World"):
