@@ -1,1 +1,1 @@
-web: python manage.py makemigrations && python manage.py migrate && gunicorn HCBackend.wsgi --log-file -
+web: python manage.py makemigrations && python manage.py migrate && gunicorn HCBackend.wsgi && docker run --name django-redis -d -p 6379:6379 --rm  redis --log-file -
