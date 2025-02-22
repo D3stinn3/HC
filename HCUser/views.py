@@ -63,8 +63,8 @@ def get_csrf_token_api(request, user_id: str):
 
     return {
         "success": True,
-        "message": "CSRF token retrieved successfully",  # ✅ Added message field
-        "data": {"csrf_token": csrf_token},  # ✅ Store CSRF token inside `data`
+        "message": "CSRF token retrieved successfully",
+        "data": {"csrf_token": csrf_token}
     }
 
 
