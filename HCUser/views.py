@@ -14,6 +14,7 @@ from django.core.cache import caches
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.http import JsonResponse
+from ninja_jwt.authentication import JWTAuth
 
 
 """NinjaExtra API FOR HomeChoice"""
@@ -124,7 +125,7 @@ def signup(request, payload: SignupSchema):
 
 """User Login"""
 
-@api.post("/login/homechoice-user", response=ResponseSchema, tags=["user"])
+@api.post("/login/homechoice-user", response=ResponseSchema, tags=["user"], auth=JWTAuth())
 @ensure_csrf_cookie
 def user_login(request, payload: LoginSchema):
     """
@@ -164,7 +165,7 @@ def user_login(request, payload: LoginSchema):
 
 """Admin Login"""
 
-@api.post("/login/homechoice-admin", response=ResponseSchema, tags=["user"])
+@api.post("/login/homechoice-admin", response=ResponseSchema, tags=["user"], auth=JWTAuth())
 @ensure_csrf_cookie
 def admin_login(request, payload: LoginSchema):
     """
@@ -204,7 +205,7 @@ def admin_login(request, payload: LoginSchema):
 
 """User Logout"""
 
-@api.post("/logout", response=ResponseSchema, tags=["user"])
+@api.post("/logout", response=ResponseSchema, tags=["user"], auth=JWTAuth())
 @ensure_csrf_cookie
 def user_logout(request):
     """
@@ -224,7 +225,7 @@ def user_logout(request):
 
 """Delete User"""
 
-@api.delete("/delete_user", response=ResponseSchema, tags=["user"])
+@api.delete("/delete_user", response=ResponseSchema, tags=["user"], auth=JWTAuth())
 @ensure_csrf_cookie
 def delete_user(request, email: str):
     """
