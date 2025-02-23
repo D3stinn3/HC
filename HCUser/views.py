@@ -165,19 +165,17 @@ def user_login(request, payload: LoginSchema):
 """Admin Login"""
 
 @api.post("/login/homechoice-admin", response=ResponseSchema, tags=["user"])
-@csrf_protect
+@ensure_csrf_cookie
 def admin_login(request, payload: LoginSchema):
     """
     Logs in admins and retrieves or stores CSRF token.
     """
-
     user = HomeChoiceUser.objects.filter(email=payload.email, is_staff=True).first()
 
     if not user:
-        return {"success": False, "message": "Admin not found. Please check credentials."}
+        return JsonResponse({"success": False, "message": "Admin not found. Please check credentials."}, status=404)
 
     password_ = user.clerkId if user.clerkId else payload.password
-
     user = authenticate(request, username=payload.email, password=password_)
 
     if user is not None and user.is_staff:
@@ -189,7 +187,7 @@ def admin_login(request, payload: LoginSchema):
             csrf_token = get_token(request)
             csrf_cache.set(f"csrf_token:{user.email}", csrf_token, timeout=None)
 
-        return {
+        return JsonResponse({
             "success": True,
             "message": "Admin login successful.",
             "data": {
@@ -198,16 +196,16 @@ def admin_login(request, payload: LoginSchema):
                 "username": user.username,
                 "csrf_token": csrf_token,
             },
-        }
+        })
 
-    return {"success": False, "message": "Invalid credentials or not an admin."}
+    return JsonResponse({"success": False, "message": "Invalid credentials or not an admin."}, status=401)
 
 
 
 """User Logout"""
 
 @api.post("/logout", response=ResponseSchema, tags=["user"])
-@csrf_protect
+@ensure_csrf_cookie
 def user_logout(request):
     """
     Logs out the user and deletes the CSRF token.
@@ -218,24 +216,22 @@ def user_logout(request):
         logout(request)
         csrf_cache.delete(f"csrf_token:{user_.email}")  # Delete CSRF token using email
 
-        return {"success": True, "message": "Logout successful. CSRF token removed."}
+        return JsonResponse({"success": True, "message": "Logout successful. CSRF token removed."})
 
-    return {
-        "success": False,
-        "message": "User is not authenticated.",
-    }
+    return JsonResponse({"success": False, "message": "User is not authenticated."}, status=401)
 
 
 
 """Delete User"""
 
 @api.delete("/delete_user", response=ResponseSchema, tags=["user"])
+@ensure_csrf_cookie
 def delete_user(request, email: str):
     """
     Deletes a user and removes their CSRF token from Redis using user.email.
     """
     if not request.user.is_authenticated:
-        return {"success": False, "message": "Authentication required."}
+        return JsonResponse({"success": False, "message": "Authentication required."}, status=401)
 
     if email and request.user.is_staff:
         # Admin deleting another user
@@ -248,4 +244,4 @@ def delete_user(request, email: str):
     csrf_cache.delete(f"csrf_token:{user.email}")
 
     user.delete()
-    return {"success": True, "message": "User deleted successfully."}
+    return JsonResponse({"success": True, "message": "User deleted successfully."})
