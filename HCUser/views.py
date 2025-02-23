@@ -13,6 +13,7 @@ from django.contrib.auth import get_user_model
 from django.core.cache import caches
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.http import JsonResponse
 
 
 """NinjaExtra API FOR HomeChoice"""
@@ -58,11 +59,13 @@ def get_csrf_token_api(request, email: str):
         csrf_token = get_token(request)  # Generate new CSRF token
         csrf_cache.set(f"csrf_token:{email}", csrf_token, timeout=None)  # Store indefinitely
 
-    return {
+    response_data = {
         "success": True,
         "message": "CSRF token retrieved successfully",
         "data": {"csrf_token": csrf_token}
     }
+
+    return JsonResponse(response_data)
 
 
 @api.post("/store_csrf_token", response=ResponseSchema, tags=["csrf"])
