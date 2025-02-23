@@ -47,8 +47,10 @@ def add(request, a: int, b: int):
 
 """ CSRF Token Management """
 
+from django.http import JsonResponse
+from django.middleware.csrf import get_token
+
 @api.get("/get_csrf_token", response=ResponseSchema, tags=["csrf"])
-@ensure_csrf_cookie
 def get_csrf_token_api(request, email: str):
     """
     Retrieves CSRF token from Redis using user.email or generates a new one.
@@ -59,13 +61,14 @@ def get_csrf_token_api(request, email: str):
         csrf_token = get_token(request)  # Generate new CSRF token
         csrf_cache.set(f"csrf_token:{email}", csrf_token, timeout=None)  # Store indefinitely
 
-    response_data = {
+    response = JsonResponse({
         "success": True,
         "message": "CSRF token retrieved successfully",
         "data": {"csrf_token": csrf_token}
-    }
+    })
+    response.set_cookie('csrftoken', csrf_token)  # Set the CSRF cookie
+    return response
 
-    return JsonResponse(response_data)
 
 
 @api.post("/store_csrf_token", response=ResponseSchema, tags=["csrf"])
