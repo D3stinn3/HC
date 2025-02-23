@@ -130,10 +130,9 @@ def user_login(request, payload: LoginSchema):
     """
     Logs in users and retrieves or stores CSRF token.
     """
-
     user = HomeChoiceUser.objects.filter(email=payload.email).first()
     if not user:
-        return {"success": False, "message": "User not found. Please sign up first."}
+        return JsonResponse({"success": False, "message": "User not found. Please sign up first."})
 
     password_ = user.clerkId if user.clerkId else payload.password
     user = authenticate(request, username=payload.email, password=password_)
@@ -147,7 +146,7 @@ def user_login(request, payload: LoginSchema):
             csrf_token = get_token(request)
             csrf_cache.set(f"csrf_token:{user.email}", csrf_token, timeout=None)
 
-        return {
+        return JsonResponse({
             "success": True,
             "message": "User login successful.",
             "data": {
@@ -156,9 +155,9 @@ def user_login(request, payload: LoginSchema):
                 "username": user.username,
                 "csrf_token": csrf_token,
             },
-        }
+        })
 
-    return {"success": False, "message": "Invalid credentials or not a common user."}
+    return JsonResponse({"success": False, "message": "Invalid credentials or not a common user."})
 
 
 
