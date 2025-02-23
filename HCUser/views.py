@@ -12,6 +12,7 @@ from .auth_util import authenticate_clerk_user
 from django.contrib.auth import get_user_model
 from django.core.cache import caches
 from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 
 """NinjaExtra API FOR HomeChoice"""
@@ -46,6 +47,7 @@ def add(request, a: int, b: int):
 """ CSRF Token Management """
 
 @api.get("/get_csrf_token", response=ResponseSchema, tags=["csrf"])
+@ensure_csrf_cookie
 def get_csrf_token_api(request, email: str):
     """
     Retrieves CSRF token from Redis using user.email or generates a new one.
