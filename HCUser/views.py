@@ -11,9 +11,12 @@ from django.shortcuts import get_object_or_404
 from .auth_util import authenticate_clerk_user
 from django.contrib.auth import get_user_model
 from django.core.cache import caches
+from django.views.decorators.csrf import csrf_protect
 
 
 """NinjaExtra API FOR HomeChoice"""
+
+"""Initialize API"""
 
 api = NinjaExtraAPI()
 
@@ -24,11 +27,6 @@ api.register_controllers(NinjaJWTDefaultController)
 # Use Django Redis cache
 csrf_cache = caches["default"]
 
-"""Initialize API"""
-api = NinjaExtraAPI()
-
-# Use Django Redis cache
-csrf_cache = caches["default"]
 
 """Intrinsic Data Handling"""
 
@@ -122,9 +120,10 @@ def signup(request, payload: SignupSchema):
 """User Login"""
 
 @api.post("/login/homechoice-user", response=ResponseSchema, tags=["user"])
+@csrf_protect
 def user_login(request, payload: LoginSchema):
     """
-    Logs in users and retrieves or stores CSRF token in Redis using user.email.
+    Logs in users and retrieves or stores CSRF token.
     """
 
     user = HomeChoiceUser.objects.filter(email=payload.email).first()
@@ -162,9 +161,10 @@ def user_login(request, payload: LoginSchema):
 """Admin Login"""
 
 @api.post("/login/homechoice-admin", response=ResponseSchema, tags=["user"])
+@csrf_protect
 def admin_login(request, payload: LoginSchema):
     """
-    Logs in admins and retrieves or stores CSRF token in Redis using user.email.
+    Logs in admins and retrieves or stores CSRF token.
     """
 
     user = HomeChoiceUser.objects.filter(email=payload.email, is_staff=True).first()
@@ -203,9 +203,10 @@ def admin_login(request, payload: LoginSchema):
 """User Logout"""
 
 @api.post("/logout", response=ResponseSchema, tags=["user"])
+@csrf_protect
 def user_logout(request):
     """
-    Logs out the user and deletes the CSRF token from Redis using user.email.
+    Logs out the user and deletes the CSRF token.
     """
     user_ = request.user
 
