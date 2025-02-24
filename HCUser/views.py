@@ -115,11 +115,11 @@ def signup(request, payload: SignupSchema):
         clerkId=payload.clerkId
     )
 
-    return {
+    return JsonResponse({
         "success": True,
         "message": "User registered successfully.",
         "data": {"email": user.email},
-    }
+    })
 
 
 
