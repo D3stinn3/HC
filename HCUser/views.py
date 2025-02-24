@@ -225,12 +225,14 @@ def user_logout(request):
 
 """Delete User"""
 
-@api.delete("/delete_user", response=ResponseSchema, tags=["user"])
+@api.delete("/delete_user", response=ResponseSchema, tags=["user"], auth=JWTAuth())
 @ensure_csrf_cookie
 def delete_user(request, clerk_id: str):
     """
     Deletes a user and removes their CSRF token from Redis using user.clerkId.
     """
+    if not request.user.is_authenticated:
+        return JsonResponse({"success": False, "message": "Authentication required."}, status=401)
 
     if clerk_id and request.user.is_staff:
         # Admin deleting another user
