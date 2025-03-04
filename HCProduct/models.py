@@ -57,6 +57,7 @@ class ProductVariant(models.Model):
     def save(self, *args, **kwargs):
         if not self.product_variant_name and self.product:
             self.product_variant_name = slugify(self.product.product_name)
+        super(ProductVariant, self).save(*args, **kwargs)
             
 class Coupon(models.Model):
     coupon_code = models.CharField(max_length=100, null=True, blank=True)
