@@ -8,14 +8,14 @@ from ninja_jwt.controller import NinjaJWTDefaultController
 from ninja_jwt.controller import TokenObtainPairController
 from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404
-from .auth_util import authenticate_clerk_user
 from django.contrib.auth import get_user_model
 from django.core.cache import caches
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.http import JsonResponse
 from ninja_jwt.authentication import JWTAuth
-
+from HCUser.utils.permission_auth_util import ClerkAuthenticationPermission
+from HCUser.utils.auth_util import clerk_authenticated
 
 """NinjaExtra API FOR HomeChoice"""
 

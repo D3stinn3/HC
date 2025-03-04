@@ -1,8 +1,9 @@
 from django.db import models
-from .image_util import upload_to
+from .utils.image_util import upload_to
 from django.contrib.auth.models import AbstractUser
 from django.urls import reverse
 
+from .managers import CustomUserManager
 
 # Create your models here.
 class HomeChoiceUser(AbstractUser):
@@ -13,8 +14,13 @@ class HomeChoiceUser(AbstractUser):
     address = models.CharField(max_length=255, null=True, blank=True)
     clerkId = models.CharField(max_length=255, null=True, blank=True)
     
+    objects = CustomUserManager()
+    
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
+    
+    class Meta:
+        ordering = ["-date_joined"]
     
     def __str__(self):
         return self.username
