@@ -3,7 +3,9 @@ from django.shortcuts import render
 from ninja_extra import NinjaExtraAPI, api_controller, http_get
 from ninja_extra.permissions import IsAuthenticated
 from .schemas import ProductSchema, ProductVariantSchema, CategorySchema
+from HCCart.schemas import CartItemSchema, CartSchema
 from HCProduct.models import Product, Category, ProductVariant
+from HCCart.models import Cart, CartItem
 from django.contrib.auth import authenticate, logout, login
 from ninja_jwt.controller import NinjaJWTDefaultController
 from ninja_jwt.controller import TokenObtainPairController
@@ -276,6 +278,58 @@ def delete_product_variant(request, variant_id: int):
     variant = get_object_or_404(ProductVariant, id=variant_id)
     variant.delete()
     return JsonResponse({"success": True, "message": "Product variant deleted successfully"})
+
+
+"""Add Product to Cart"""
+
+@api.post("/cart/add", tags=["cart"])
+@login_required
+def add_to_cart(request, payload: CartItemSchema):
+    """
+    Add a product or product variant to the cart.
+    """
+    user = request.user  # Assuming authentication is in place
+    cart, created = Cart.objects.get_or_create(user=user)
+
+    product = None
+    variant = None
+
+    if payload.product_id:
+        product = get_object_or_404(Product, id=payload.product_id)
+    elif payload.variant_id:
+        variant = get_object_or_404(ProductVariant, id=payload.variant_id)
+    
+    if not product and not variant:
+        return JsonResponse({"success": False, "message": "Invalid product or variant."}, status=400)
+
+    cart_item, created = CartItem.objects.get_or_create(
+        cart=cart, product=product, variant=variant, defaults={"quantity": payload.quantity}
+    )
+
+    if not created:
+        cart_item.quantity += payload.quantity
+        cart_item.save()
+
+    return JsonResponse({
+        "success": True,
+        "message": "Product added to cart.",
+        "cart_item_id": cart_item.id,
+        "quantity": cart_item.quantity
+    })
+    
+"""Remove Product from Cart"""
+
+@api.delete("/cart/remove/{cart_item_id}", tags=["cart"])
+@login_required
+def remove_from_cart(request, cart_item_id: int):
+    """
+    Remove a product from the cart.
+    """
+    cart_item = get_object_or_404(CartItem, id=cart_item_id, cart__user=request.user)
+    cart_item.delete()
+
+    return JsonResponse({"success": True, "message": "Item removed from cart."})
+
 
 
 
