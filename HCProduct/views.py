@@ -446,6 +446,23 @@ def create_category(request, payload: CategorySchema, file: Optional[UploadedFil
     
 """Get All Categories"""
 
+# @api.get("/categories", tags=["categories"])
+# def get_all_categories(request):
+#     """
+#     Retrieve all categories.
+#     """
+#     categories = Category.objects.all()
+#     category_list = [
+#         {
+#             "id": category.id,
+#             "category_name": category.category_name,
+#             "category_image": default_storage.url(category.category_image) if category.category_image else None,
+#             "created_at": category.created_at,
+#         }
+#         for category in categories
+#     ]
+#     return JsonResponse({"success": True, "data": category_list})
+
 @api.get("/categories", tags=["categories"])
 def get_all_categories(request):
     """
@@ -456,12 +473,13 @@ def get_all_categories(request):
         {
             "id": category.id,
             "category_name": category.category_name,
-            "category_image": default_storage.url(category.category_image) if category.category_image else None,
+            "category_image": default_storage.url(str(category.category_image)) if category.category_image else None,
             "created_at": category.created_at,
         }
         for category in categories
     ]
     return JsonResponse({"success": True, "data": category_list})
+
 
 """Update Category (Handles Image Upload)"""
 
