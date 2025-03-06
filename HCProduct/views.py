@@ -19,8 +19,11 @@ from django.http import JsonResponse
 from ninja_jwt.authentication import JWTAuth
 from HCUser.utils.permission_auth_util import ClerkAuthenticationPermission
 from HCUser.utils.auth_util import clerk_authenticated
-
+import uuid
+from django.core.files.storage import default_storage
 from django.contrib.auth.decorators import login_required
+from typing import Any, Optional, List, Dict
+from ninja import NinjaAPI, Form, Schema, File, UploadedFile
 
 """NinjaExtra API FOR HomeChoice"""
 
@@ -36,9 +39,30 @@ api.register_controllers(NinjaJWTDefaultController)
 
 """Get All Products"""
 
+# @api.get("/products", tags=["products"])
+# def get_products(request):
+#     """
+#     Retrieve all products.
+#     """
+#     products = Product.objects.all()
+#     product_list = [
+#         {
+#             "id": product.id,
+#             "product_name": product.product_name,
+#             "product_category": product.product_category.category_name if product.product_category else None,
+#             "product_image": product.product_image.url if product.product_image else None,
+#             "product_description": product.product_description,
+#             "product_price": product.product_price,
+#             "product_upcoming": product.product_upcoming,
+#             "created_at": product.created_at,
+#             "updated_at": product.updated_at,
+#         }
+#         for product in products
+#     ]
+#     return JsonResponse({"success": True, "data": product_list})
+
 @api.get("/products", tags=["products"])
-@login_required
-def get_products(request):
+def get_all_products(request):
     """
     Retrieve all products.
     """
@@ -48,21 +72,44 @@ def get_products(request):
             "id": product.id,
             "product_name": product.product_name,
             "product_category": product.product_category.category_name if product.product_category else None,
-            "product_image": product.product_image.url if product.product_image else None,
+            "product_image": default_storage.url(product.product_image) if product.product_image else None,
             "product_description": product.product_description,
             "product_price": product.product_price,
             "product_upcoming": product.product_upcoming,
             "created_at": product.created_at,
-            "updated_at": product.updated_at,
         }
         for product in products
     ]
     return JsonResponse({"success": True, "data": product_list})
 
+"""Get Products By ID"""
+
+@api.get("/products/{product_id}", tags=["products"])
+def get_product(request, product_id: int):
+    """
+    Retrieve product details by ID.
+    """
+    product = get_object_or_404(Product, id=product_id)
+
+    return JsonResponse({
+        "success": True,
+        "data": {
+            "id": product.id,
+            "product_name": product.product_name,
+            "product_category": product.product_category.category_name if product.product_category else None,
+            "product_image": default_storage.url(product.product_image) if product.product_image else None,
+            "product_description": product.product_description,
+            "product_price": product.product_price,
+            "product_upcoming": product.product_upcoming,
+            "created_at": product.created_at,
+        }
+    })
+
+
+
 """Get Products by Category"""
 
 @api.get("/products/category/{category_slug}", tags=["products"])
-@login_required
 def get_products_by_category(request, category_slug: str):
     """
     Retrieve all products belonging to a specific category.
@@ -86,7 +133,6 @@ def get_products_by_category(request, category_slug: str):
 """Get Product Variants by Product"""
 
 @api.get("/product/{product_id}/variants", tags=["product_variants"])
-@login_required
 def get_product_variants(request, product_id: int):
     """
     Retrieve all variants of a given product.
@@ -110,7 +156,6 @@ def get_product_variants(request, product_id: int):
 """Get Product by Variant"""
 
 @api.get("/product/variant/{variant_id}", tags=["product_variants"])
-@login_required
 def get_product_by_variant(request, variant_id: int):
     """
     Retrieve product details by variant ID.
@@ -133,12 +178,33 @@ def get_product_by_variant(request, variant_id: int):
 
 """Create Product"""
 
+# @api.post("/products", tags=["products"])
+# def create_product(request, payload: ProductSchema):
+#     """
+#     Create a new product.
+#     """
+#     category = get_object_or_404(Category, id=payload.product_category_id) if payload.product_category_id else None
+#     product = Product.objects.create(
+#         product_category=category,
+#         product_name=payload.product_name,
+#         product_description=payload.product_description,
+#         product_price=payload.product_price,
+#         product_upcoming=payload.product_upcoming,
+#     )
+#     return JsonResponse({"success": True, "message": "Product created successfully", "product_id": product.id})
+
 @api.post("/products", tags=["products"])
-@login_required
-def create_product(request, payload: ProductSchema):
+def create_product(request, payload: ProductSchema, file: Optional[UploadedFile] = None):
     """
-    Create a new product.
+    Create a new product with an image uploaded to AWS S3.
     """
+    user = request.user  # Assuming authentication is required
+
+    save_path = None
+    if file:
+        file_name = f"products/{user.id}/{uuid.uuid4()}_{file.name}"
+        save_path = default_storage.save(file_name, file)  # Uploads to S3
+
     category = get_object_or_404(Category, id=payload.product_category_id) if payload.product_category_id else None
     product = Product.objects.create(
         product_category=category,
@@ -146,18 +212,46 @@ def create_product(request, payload: ProductSchema):
         product_description=payload.product_description,
         product_price=payload.product_price,
         product_upcoming=payload.product_upcoming,
+        product_image=save_path  # Stores S3 URL
     )
+
     return JsonResponse({"success": True, "message": "Product created successfully", "product_id": product.id})
+
+
 
 """Update Product"""
 
+# @api.put("/products/{product_id}", tags=["products"])
+# def update_product(request, product_id: int, payload: ProductSchema):
+#     """
+#     Update an existing product.
+#     """
+#     product = get_object_or_404(Product, id=product_id)
+
+#     if payload.product_category_id:
+#         category = get_object_or_404(Category, id=payload.product_category_id)
+#         product.product_category = category
+
+#     product.product_name = payload.product_name
+#     product.product_description = payload.product_description
+#     product.product_price = payload.product_price
+#     product.product_upcoming = payload.product_upcoming
+#     product.save()
+
+#     return JsonResponse({"success": True, "message": "Product updated successfully"})
+
 @api.put("/products/{product_id}", tags=["products"])
-@login_required
-def update_product(request, product_id: int, payload: ProductSchema):
+def update_product(request, product_id: int, payload: ProductSchema, file: Optional[UploadedFile] = File(None)):
     """
-    Update an existing product.
+    Update an existing product with a new image if provided.
     """
     product = get_object_or_404(Product, id=product_id)
+
+    # Update Image on S3 if a new file is provided
+    if file:
+        file_name = f"products/{request.user.id}/{uuid.uuid4()}_{file.name}"
+        save_path = default_storage.save(file_name, file)
+        product.product_image = save_path
 
     if payload.product_category_id:
         category = get_object_or_404(Category, id=payload.product_category_id)
@@ -171,10 +265,10 @@ def update_product(request, product_id: int, payload: ProductSchema):
 
     return JsonResponse({"success": True, "message": "Product updated successfully"})
 
+
 """Delete Product"""
 
 @api.delete("/products/{product_id}", tags=["products"])
-@login_required
 def delete_product(request, product_id: int):
     """
     Delete a product.
@@ -187,7 +281,6 @@ def delete_product(request, product_id: int):
 """Create Product Variant API"""
 
 @api.post("/products/{product_id}/variant", tags=["product_variants"])
-@login_required
 def create_product_variant(request, product_id: int, payload: ProductVariantSchema):
     """
     Create a new product variant.
@@ -224,7 +317,6 @@ def create_product_variant(request, product_id: int, payload: ProductVariantSche
 """Get Variants by Product"""
 
 @api.get("/products/{product_id}/variants", tags=["product_variants"])
-@login_required
 def get_variants_by_product(request, product_id: int):
     """
     Retrieve all variants of a given product.
@@ -251,7 +343,6 @@ def get_variants_by_product(request, product_id: int):
 """Update Product Variant"""
 
 @api.put("/product/variant/{variant_id}", tags=["product_variants"])
-@login_required
 def update_product_variant(request, variant_id: int, payload: ProductVariantSchema):
     """
     Update an existing product variant.
@@ -270,7 +361,6 @@ def update_product_variant(request, variant_id: int, payload: ProductVariantSche
 """Delete Product Variant"""
 
 @api.delete("/product/variant/{variant_id}", tags=["product_variants"])
-@login_required
 def delete_product_variant(request, variant_id: int):
     """
     Delete a product variant.

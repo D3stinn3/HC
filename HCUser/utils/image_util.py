@@ -1,8 +1,13 @@
+import uuid
 from django.utils.timezone import now
 
-"""Upload Image Function"""
-
 def upload_to(instance, filename):
-    # Using UUID to avoid filename collision
-    prefix = 'uploads/{user_id}/{date}/'.format(user_id=instance.user.id if hasattr(instance, 'user') else 'anonymous', date=now().strftime('%Y%m%d'))
-    return '{prefix}{filename}'.format(prefix=prefix, filename=filename)
+    """
+    Generate a unique file path for storing media files in AWS S3.
+    """
+    file_extension = filename.split('.')[-1]
+    unique_filename = f"{uuid.uuid4()}.{file_extension}"
+
+    if hasattr(instance, 'user') and instance.user:
+        return f"uploads/{instance.user.id}/{now().strftime('%Y%m%d')}/{unique_filename}"
+    return f"uploads/anonymous/{now().strftime('%Y%m%d')}/{unique_filename}"
