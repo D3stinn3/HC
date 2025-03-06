@@ -443,5 +443,63 @@ def create_category(request, payload: CategorySchema, file: Optional[UploadedFil
         "message": "Category created successfully",
         "category_id": category.id
     })
+    
+"""Get All Categories"""
+
+@api.get("/categories", tags=["categories"])
+def get_all_categories(request):
+    """
+    Retrieve all categories.
+    """
+    categories = Category.objects.all()
+    category_list = [
+        {
+            "id": category.id,
+            "category_name": category.category_name,
+            "category_image": default_storage.url(category.category_image) if category.category_image else None,
+            "created_at": category.created_at,
+        }
+        for category in categories
+    ]
+    return JsonResponse({"success": True, "data": category_list})
+
+"""Update Category (Handles Image Upload)"""
+
+@api.put("/categories/{category_id}", tags=["categories"])
+def update_category(request, category_id: int, payload: CategorySchema, file: Optional[UploadedFile] = File(None)):
+    """
+    Update an existing category with a new image if provided.
+    """
+    category = get_object_or_404(Category, id=category_id)
+
+    # Update Image on S3 if a new file is provided
+    if file:
+        file_name = f"categories/{uuid.uuid4()}_{file.name}"
+        save_path = default_storage.save(file_name, file)
+        category.category_image = save_path
+
+    category.category_name = payload.category_name
+    category.save()
+
+    return JsonResponse({"success": True, "message": "Category updated successfully"})
+
+"""Delete Category"""
+
+@api.delete("/categories/{category_id}", tags=["categories"])
+def delete_category(request, category_id: int):
+    """
+    Delete a category from the database.
+    """
+    category = get_object_or_404(Category, id=category_id)
+
+    # Delete category image from S3 (if exists)
+    if category.category_image:
+        default_storage.delete(category.category_image)
+
+    category.delete()
+    return JsonResponse({"success": True, "message": "Category deleted successfully"})
+
+
+
 
 
