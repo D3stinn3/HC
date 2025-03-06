@@ -2,14 +2,14 @@ from ninja import Schema
 from typing import Optional
 
 
-class CategorySchema(Schema):
-    """
-    Schema for Category
-    """
-    id: Optional[int] = None
-    category_name: str
-    slug: Optional[str] = None
-    category_image: Optional[str] = None  # Assuming image URL will be passed
+# class CategorySchema(Schema):
+#     """
+#     Schema for Category
+#     """
+#     id: Optional[int] = None
+#     category_name: str
+#     slug: Optional[str] = None
+#     category_image: Optional[str] = None  # Assuming image URL will be passed
 
 
 class ProductSchema(Schema):
@@ -36,3 +36,7 @@ class ProductVariantSchema(Schema):
     product_variant_name: str
     product_variant_order: Optional[int] = 0
     product_variant_type: Optional[str] = None
+
+
+class CategorySchema(Schema):
+    category_name: str

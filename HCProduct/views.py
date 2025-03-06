@@ -421,5 +421,27 @@ def remove_from_cart(request, cart_item_id: int):
     return JsonResponse({"success": True, "message": "Item removed from cart."})
 
 
+"""Create Category API"""
+
+@api.post("/categories", tags=["categories"])
+def create_category(request, payload: CategorySchema, file: Optional[UploadedFile] = File(None)):
+    """
+    Create a new category with an optional image uploaded to AWS S3.
+    """
+    save_path = None
+    if file:
+        file_name = f"categories/{uuid.uuid4()}_{file.name}"
+        save_path = default_storage.save(file_name, file)  # Upload to S3
+
+    category = Category.objects.create(
+        category_name=payload.category_name,
+        category_image=save_path  # Save S3 URL if file exists
+    )
+
+    return JsonResponse({
+        "success": True,
+        "message": "Category created successfully",
+        "category_id": category.id
+    })
 
 
