@@ -68,6 +68,14 @@ class ProductVariant(models.Model):
         if not self.product_variant_name and self.product:
             self.product_variant_name = slugify(self.product.product_name)
         super(ProductVariant, self).save(*args, **kwargs)
+        
+class ProductDiscount(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='discounts')
+    discount_percentage = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    discount_start_date = models.DateTimeField(null=True, blank=True)
+    discount_end_date = models.DateTimeField(null=True, blank=True)
+    discount_code = models.CharField(max_length=100, null=True, blank=True)
+    discount_type = models.CharField(max_length=100, null=True, blank=True)
             
 class Coupon(models.Model):
     coupon_code = models.CharField(max_length=100, null=True, blank=True)
