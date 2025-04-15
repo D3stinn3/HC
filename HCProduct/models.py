@@ -38,7 +38,16 @@ class Product(models.Model):
     
     def save(self, *args, **kwargs):
         self.slug = slugify(self.product_name)
-        super(Product, self).save(*args, **kwargs) 
+        super(Product, self).save(*args, **kwargs)
+
+class productDetails(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='details')
+    product_meatcut = models.CharField(max_length=100,null=True, blank=True)
+    product_weight = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    product_packaging = models.CharField(max_length=100, null=True, blank=True)
+    product_origin = models.CharField(max_length=100, null=True, blank=True)
+    product_processing = models.CharField(max_length=100, null=True, blank=True)
+
     
 class ProductVariant(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
