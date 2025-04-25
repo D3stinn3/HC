@@ -35,31 +35,7 @@ api.register_controllers(NinjaJWTDefaultController)
 
 # Create your views here.
 
-# csrf_cache = caches["default"]
-
 """Get All Products"""
-
-# @api.get("/products", tags=["products"])
-# def get_products(request):
-#     """
-#     Retrieve all products.
-#     """
-#     products = Product.objects.all()
-#     product_list = [
-#         {
-#             "id": product.id,
-#             "product_name": product.product_name,
-#             "product_category": product.product_category.category_name if product.product_category else None,
-#             "product_image": product.product_image.url if product.product_image else None,
-#             "product_description": product.product_description,
-#             "product_price": product.product_price,
-#             "product_upcoming": product.product_upcoming,
-#             "created_at": product.created_at,
-#             "updated_at": product.updated_at,
-#         }
-#         for product in products
-#     ]
-#     return JsonResponse({"success": True, "data": product_list})
 
 @api.get("/products", tags=["products"])
 def get_all_products(request):
@@ -178,21 +154,6 @@ def get_product_by_variant(request, variant_id: int):
 
 """Create Product"""
 
-# @api.post("/products", tags=["products"])
-# def create_product(request, payload: ProductSchema):
-#     """
-#     Create a new product.
-#     """
-#     category = get_object_or_404(Category, id=payload.product_category_id) if payload.product_category_id else None
-#     product = Product.objects.create(
-#         product_category=category,
-#         product_name=payload.product_name,
-#         product_description=payload.product_description,
-#         product_price=payload.product_price,
-#         product_upcoming=payload.product_upcoming,
-#     )
-#     return JsonResponse({"success": True, "message": "Product created successfully", "product_id": product.id})
-
 @api.post("/products", tags=["products"])
 def create_product(request, payload: ProductSchema, file: Optional[UploadedFile] = None):
     """
@@ -221,24 +182,6 @@ def create_product(request, payload: ProductSchema, file: Optional[UploadedFile]
 
 """Update Product"""
 
-# @api.put("/products/{product_id}", tags=["products"])
-# def update_product(request, product_id: int, payload: ProductSchema):
-#     """
-#     Update an existing product.
-#     """
-#     product = get_object_or_404(Product, id=product_id)
-
-#     if payload.product_category_id:
-#         category = get_object_or_404(Category, id=payload.product_category_id)
-#         product.product_category = category
-
-#     product.product_name = payload.product_name
-#     product.product_description = payload.product_description
-#     product.product_price = payload.product_price
-#     product.product_upcoming = payload.product_upcoming
-#     product.save()
-
-#     return JsonResponse({"success": True, "message": "Product updated successfully"})
 
 @api.put("/products/{product_id}", tags=["products"])
 def update_product(request, product_id: int, payload: ProductSchema, file: Optional[UploadedFile] = File(None)):
@@ -445,23 +388,6 @@ def create_category(request, payload: CategorySchema, file: Optional[UploadedFil
     })
     
 """Get All Categories"""
-
-# @api.get("/categories", tags=["categories"])
-# def get_all_categories(request):
-#     """
-#     Retrieve all categories.
-#     """
-#     categories = Category.objects.all()
-#     category_list = [
-#         {
-#             "id": category.id,
-#             "category_name": category.category_name,
-#             "category_image": default_storage.url(category.category_image) if category.category_image else None,
-#             "created_at": category.created_at,
-#         }
-#         for category in categories
-#     ]
-#     return JsonResponse({"success": True, "data": category_list})
 
 @api.get("/categories", tags=["categories"])
 def get_all_categories(request):
