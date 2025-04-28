@@ -1,5 +1,6 @@
 from ninja import Schema
 from typing import Optional
+from datetime import datetime, date
 
 
 # class CategorySchema(Schema):
@@ -40,3 +41,24 @@ class ProductVariantSchema(Schema):
 
 class CategorySchema(Schema):
     category_name: str
+
+class ProductDetailsSchema(Schema):
+    product_meatcut: Optional[str]
+    product_weight: Optional[float]
+    product_packaging: Optional[str]
+    product_origin: Optional[str]
+    product_processing: Optional[str]
+
+class ProductDiscountSchema(Schema):
+    discount_percentage: Optional[float]
+    discount_start_date: Optional[datetime]
+    discount_end_date: Optional[datetime]
+    discount_code: Optional[str]
+    discount_type: Optional[str]
+
+class CouponSchema(Schema):
+    coupon_code: Optional[str]
+    coupon_discount: Optional[float]
+    coupon_start_date: Optional[date]
+    coupon_end_date: Optional[date]
+    coupon_is_expired: Optional[bool] = False

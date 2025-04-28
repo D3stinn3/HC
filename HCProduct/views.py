@@ -2,9 +2,9 @@ from django.shortcuts import render
 from django.shortcuts import render
 from ninja_extra import NinjaExtraAPI, api_controller, http_get
 from ninja_extra.permissions import IsAuthenticated
-from .schemas import ProductSchema, ProductVariantSchema, CategorySchema
+from .schemas import ProductSchema, ProductVariantSchema, CategorySchema,ProductDetailsSchema, ProductDiscountSchema, CouponSchema
 from HCCart.schemas import CartItemSchema, CartSchema
-from HCProduct.models import Product, Category, ProductVariant
+from HCProduct.models import Product, Category, ProductVariant, productDetails, ProductDiscount, Coupon
 from HCCart.models import Cart, CartItem
 from django.contrib.auth import authenticate, logout, login
 from ninja_jwt.controller import NinjaJWTDefaultController
@@ -66,6 +66,34 @@ def get_product(request, product_id: int):
     Retrieve product details by ID.
     """
     product = get_object_or_404(Product, id=product_id)
+    
+    # Fetch product details
+    product_details = product.details.all()
+    details_list = [
+        {
+            "id": detail.id,
+            "product_meatcut": detail.product_meatcut,
+            "product_weight": detail.product_weight,
+            "product_packaging": detail.product_packaging,
+            "product_origin": detail.product_origin,
+            "product_processing": detail.product_processing,
+        }
+        for detail in product_details
+    ]
+
+    # Fetch product discounts
+    product_discounts = product.discounts.all()
+    discounts_list = [
+        {
+            "id": discount.id,
+            "discount_percentage": discount.discount_percentage,
+            "discount_start_date": discount.discount_start_date,
+            "discount_end_date": discount.discount_end_date,
+            "discount_code": discount.discount_code,
+            "discount_type": discount.discount_type,
+        }
+        for discount in product_discounts
+    ]
 
     return JsonResponse({
         "success": True,
@@ -78,8 +106,69 @@ def get_product(request, product_id: int):
             "product_price": product.product_price,
             "product_upcoming": product.product_upcoming,
             "created_at": product.created_at,
+            "details": details_list,
+            "discounts": discounts_list,
         }
     })
+    
+"""Create Product Details"""
+@api.post("/products/{product_id}/details", tags=["product_details"])
+def create_product_details(request, product_id: int, payload: ProductDetailsSchema):
+    product = get_object_or_404(Product, id=product_id)
+    detail = productDetails.objects.create(
+        product=product,
+        product_meatcut=payload.product_meatcut,
+        product_weight=payload.product_weight,
+        product_packaging=payload.product_packaging,
+        product_origin=payload.product_origin,
+        product_processing=payload.product_processing,
+    )
+    return JsonResponse({"success": True, "message": "Product details created", "detail_id": detail.id})
+
+
+"""Create Product Discount"""
+@api.post("/products/{product_id}/discounts", tags=["product_discounts"])
+def create_product_discount(request, product_id: int, payload: ProductDiscountSchema):
+    product = get_object_or_404(Product, id=product_id)
+    discount = ProductDiscount.objects.create(
+        product=product,
+        discount_percentage=payload.discount_percentage,
+        discount_start_date=payload.discount_start_date,
+        discount_end_date=payload.discount_end_date,
+        discount_code=payload.discount_code,
+        discount_type=payload.discount_type,
+    )
+    return JsonResponse({"success": True, "message": "Product discount created", "discount_id": discount.id})
+
+"""Create a Coupon"""
+@api.post("/coupons", tags=["coupons"])
+def create_coupon(request, payload: CouponSchema):
+    coupon = Coupon.objects.create(
+        coupon_code=payload.coupon_code,
+        coupon_discount=payload.coupon_discount,
+        coupon_start_date=payload.coupon_start_date,
+        coupon_end_date=payload.coupon_end_date,
+        coupon_is_expired=payload.coupon_is_expired
+    )
+    return JsonResponse({"success": True, "message": "Coupon created", "coupon_id": coupon.id})
+
+
+"""Get all Coupons"""
+@api.get("/coupons", tags=["coupons"])
+def get_all_coupons(request):
+    coupons = Coupon.objects.all()
+    coupon_list = [
+        {
+            "id": coupon.id,
+            "coupon_code": coupon.coupon_code,
+            "coupon_discount": coupon.coupon_discount,
+            "coupon_start_date": coupon.coupon_start_date,
+            "coupon_end_date": coupon.coupon_end_date,
+            "coupon_is_expired": coupon.coupon_is_expired,
+        }
+        for coupon in coupons
+    ]
+    return JsonResponse({"success": True, "data": coupon_list})
 
 
 
