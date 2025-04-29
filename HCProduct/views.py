@@ -125,35 +125,41 @@ def create_product_details(request, product_id: int, payload: ProductDetailsSche
     )
     return JsonResponse({"success": True, "message": "Product details created", "detail_id": detail.id})
 
-from HCProduct.models import productDetails
-from .schemas import ProductDetailsSchema
-
 # ==========================
 # Get a Single Product Detail
 # ==========================
-@api.get("/product/details/{detail_id}", tags=["product_details"])
-def get_product_detail(request, detail_id: int):
-    detail = get_object_or_404(productDetails, id=detail_id)
+@api.get("/products/{product_id}/details", tags=["product_details"])
+def get_product_details_by_product(request, product_id: int):
+    product = get_object_or_404(Product, id=product_id)
+    details = product.details.all()
 
-    return JsonResponse({
-        "success": True,
-        "data": {
+    details_list = [
+        {
             "id": detail.id,
-            "product": detail.product.id,
             "product_meatcut": detail.product_meatcut,
             "product_weight": detail.product_weight,
             "product_packaging": detail.product_packaging,
             "product_origin": detail.product_origin,
             "product_processing": detail.product_processing,
         }
-    })
+        for detail in details
+    ]
+
+    return JsonResponse({"success": True, "product_id": product.id, "details": details_list})
+
 
 # ==========================
 # Update a Product Detail
 # ==========================
-@api.put("/product/details/{detail_id}", tags=["product_details"])
-def update_product_detail(request, detail_id: int, payload: ProductDetailsSchema):
-    detail = get_object_or_404(productDetails, id=detail_id)
+@api.put("/products/{product_id}/details", tags=["product_details"])
+def update_product_details_by_product(request, product_id: int, payload: ProductDetailsSchema):
+    product = get_object_or_404(Product, id=product_id)
+    try:
+        detail = product.details.first()
+        if not detail:
+            return JsonResponse({"success": False, "message": "No product details found to update."}, status=404)
+    except productDetails.DoesNotExist:
+        return JsonResponse({"success": False, "message": "No product details found to update."}, status=404)
 
     detail.product_meatcut = payload.product_meatcut
     detail.product_weight = payload.product_weight
@@ -162,16 +168,24 @@ def update_product_detail(request, detail_id: int, payload: ProductDetailsSchema
     detail.product_processing = payload.product_processing
     detail.save()
 
-    return JsonResponse({"success": True, "message": "Product detail updated successfully"})
+    return JsonResponse({"success": True, "message": "Product details updated successfully"})
+
 
 # ==========================
 # Delete a Product Detail
 # ==========================
-@api.delete("/product/details/{detail_id}", tags=["product_details"])
-def delete_product_detail(request, detail_id: int):
-    detail = get_object_or_404(productDetails, id=detail_id)
-    detail.delete()
-    return JsonResponse({"success": True, "message": "Product detail deleted successfully"})
+@api.delete("/products/{product_id}/details", tags=["product_details"])
+def delete_product_details_by_product(request, product_id: int):
+    product = get_object_or_404(Product, id=product_id)
+    details = product.details.all()
+
+    if not details.exists():
+        return JsonResponse({"success": False, "message": "No product details found to delete."}, status=404)
+
+    details.delete()
+
+    return JsonResponse({"success": True, "message": "All product details deleted successfully"})
+
 
 
 """Create Product Discount"""
