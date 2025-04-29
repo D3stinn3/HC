@@ -125,6 +125,54 @@ def create_product_details(request, product_id: int, payload: ProductDetailsSche
     )
     return JsonResponse({"success": True, "message": "Product details created", "detail_id": detail.id})
 
+from HCProduct.models import productDetails
+from .schemas import ProductDetailsSchema
+
+# ==========================
+# Get a Single Product Detail
+# ==========================
+@api.get("/product/details/{detail_id}", tags=["product_details"])
+def get_product_detail(request, detail_id: int):
+    detail = get_object_or_404(productDetails, id=detail_id)
+
+    return JsonResponse({
+        "success": True,
+        "data": {
+            "id": detail.id,
+            "product": detail.product.id,
+            "product_meatcut": detail.product_meatcut,
+            "product_weight": detail.product_weight,
+            "product_packaging": detail.product_packaging,
+            "product_origin": detail.product_origin,
+            "product_processing": detail.product_processing,
+        }
+    })
+
+# ==========================
+# Update a Product Detail
+# ==========================
+@api.put("/product/details/{detail_id}", tags=["product_details"])
+def update_product_detail(request, detail_id: int, payload: ProductDetailsSchema):
+    detail = get_object_or_404(productDetails, id=detail_id)
+
+    detail.product_meatcut = payload.product_meatcut
+    detail.product_weight = payload.product_weight
+    detail.product_packaging = payload.product_packaging
+    detail.product_origin = payload.product_origin
+    detail.product_processing = payload.product_processing
+    detail.save()
+
+    return JsonResponse({"success": True, "message": "Product detail updated successfully"})
+
+# ==========================
+# Delete a Product Detail
+# ==========================
+@api.delete("/product/details/{detail_id}", tags=["product_details"])
+def delete_product_detail(request, detail_id: int):
+    detail = get_object_or_404(productDetails, id=detail_id)
+    detail.delete()
+    return JsonResponse({"success": True, "message": "Product detail deleted successfully"})
+
 
 """Create Product Discount"""
 @api.post("/products/{product_id}/discounts", tags=["product_discounts"])
@@ -139,6 +187,53 @@ def create_product_discount(request, product_id: int, payload: ProductDiscountSc
         discount_type=payload.discount_type,
     )
     return JsonResponse({"success": True, "message": "Product discount created", "discount_id": discount.id})
+from HCProduct.models import ProductDiscount
+from .schemas import ProductDiscountSchema
+
+# ==========================
+# Get a Single Product Discount
+# ==========================
+@api.get("/product/discounts/{discount_id}", tags=["product_discounts"])
+def get_product_discount(request, discount_id: int):
+    discount = get_object_or_404(ProductDiscount, id=discount_id)
+    
+    return JsonResponse({
+        "success": True,
+        "data": {
+            "id": discount.id,
+            "product": discount.product.id,
+            "discount_percentage": discount.discount_percentage,
+            "discount_start_date": discount.discount_start_date,
+            "discount_end_date": discount.discount_end_date,
+            "discount_code": discount.discount_code,
+            "discount_type": discount.discount_type,
+        }
+    })
+
+# ==========================
+# Update a Product Discount
+# ==========================
+@api.put("/product/discounts/{discount_id}", tags=["product_discounts"])
+def update_product_discount(request, discount_id: int, payload: ProductDiscountSchema):
+    discount = get_object_or_404(ProductDiscount, id=discount_id)
+    
+    discount.discount_percentage = payload.discount_percentage
+    discount.discount_start_date = payload.discount_start_date
+    discount.discount_end_date = payload.discount_end_date
+    discount.discount_code = payload.discount_code
+    discount.discount_type = payload.discount_type
+    discount.save()
+
+    return JsonResponse({"success": True, "message": "Product discount updated successfully"})
+
+# ==========================
+# Delete a Product Discount
+# ==========================
+@api.delete("/product/discounts/{discount_id}", tags=["product_discounts"])
+def delete_product_discount(request, discount_id: int):
+    discount = get_object_or_404(ProductDiscount, id=discount_id)
+    discount.delete()
+    return JsonResponse({"success": True, "message": "Product discount deleted successfully"})
 
 """Create a Coupon"""
 @api.post("/coupons", tags=["coupons"])
