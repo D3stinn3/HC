@@ -3,16 +3,6 @@ from typing import Optional
 from datetime import datetime, date
 
 
-# class CategorySchema(Schema):
-#     """
-#     Schema for Category
-#     """
-#     id: Optional[int] = None
-#     category_name: str
-#     slug: Optional[str] = None
-#     category_image: Optional[str] = None  # Assuming image URL will be passed
-
-
 class ProductSchema(Schema):
     """
     Schema for Product

@@ -21,5 +21,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('userapi/', include('HCUser.urls')),
     path('productapi/', include('HCProduct.urls')),
-    path('cartapi/', include('HCCart.urls'))
+    path('cartapi/', include('HCCart.urls')),
+    path('orderapi/', include('HCOrder.urls'))
 ]
