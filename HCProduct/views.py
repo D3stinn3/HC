@@ -604,6 +604,27 @@ def get_all_categories(request):
     ]
     return JsonResponse({"success": True, "data": category_list})
 
+"""Get Category By ID"""
+@api.get("/categories/{category_id}", tags=["categories"])
+def get_category_by_id(request, category_id: int):
+    """
+    Retrieve a category by its ID.
+    """
+    category = get_object_or_404(Category, id=category_id)
+
+    return JsonResponse({
+        "success": True,
+        "data": {
+            "id": category.id,
+            "category_name": category.category_name,
+            "category_image": default_storage.url(str(category.category_image)) if category.category_image else None,
+            "slug": category.slug,
+            "created_at": category.created_at,
+            "updated_at": category.updated_at,
+        }
+    })
+
+
 
 """Update Category (Handles Image Upload)"""
 
