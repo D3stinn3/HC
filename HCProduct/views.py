@@ -37,14 +37,65 @@ api.register_controllers(NinjaJWTDefaultController)
 
 """Get All Products"""
 
+# @api.get("/products", tags=["products"])
+# def get_all_products(request):
+#     """
+#     Retrieve all products.
+#     """
+#     products = Product.objects.all()
+#     product_list = [
+#         {
+#             "id": product.id,
+#             "product_name": product.product_name,
+#             "product_category": product.product_category.category_name if product.product_category else None,
+#             "product_image": default_storage.url(product.product_image) if product.product_image else None,
+#             "product_description": product.product_description,
+#             "product_price": product.product_price,
+#             "product_upcoming": product.product_upcoming,
+#             "created_at": product.created_at,
+#         }
+#         for product in products
+#     ]
+#     return JsonResponse({"success": True, "data": product_list})
+
 @api.get("/products", tags=["products"])
 def get_all_products(request):
     """
-    Retrieve all products.
+    Retrieve all products including their details and discounts.
     """
-    products = Product.objects.all()
-    product_list = [
-        {
+    products = Product.objects.prefetch_related('details', 'discounts').select_related('product_category').all()
+
+    product_list = []
+    for product in products:
+        # Fetch related product details
+        details = product.details.all()
+        details_list = [
+            {
+                "id": detail.id,
+                "product_meatcut": detail.product_meatcut,
+                "product_weight": detail.product_weight,
+                "product_packaging": detail.product_packaging,
+                "product_origin": detail.product_origin,
+                "product_processing": detail.product_processing,
+            }
+            for detail in details
+        ]
+
+        # Fetch related product discounts
+        discounts = product.discounts.all()
+        discounts_list = [
+            {
+                "id": discount.id,
+                "discount_percentage": discount.discount_percentage,
+                "discount_start_date": discount.discount_start_date,
+                "discount_end_date": discount.discount_end_date,
+                "discount_code": discount.discount_code,
+                "discount_type": discount.discount_type,
+            }
+            for discount in discounts
+        ]
+
+        product_list.append({
             "id": product.id,
             "product_name": product.product_name,
             "product_category": product.product_category.category_name if product.product_category else None,
@@ -53,10 +104,12 @@ def get_all_products(request):
             "product_price": product.product_price,
             "product_upcoming": product.product_upcoming,
             "created_at": product.created_at,
-        }
-        for product in products
-    ]
+            "details": details_list,
+            "discounts": discounts_list,
+        })
+
     return JsonResponse({"success": True, "data": product_list})
+
 
 """Get Products By ID"""
 
