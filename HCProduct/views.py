@@ -37,27 +37,6 @@ api.register_controllers(NinjaJWTDefaultController)
 
 """Get All Products"""
 
-# @api.get("/products", tags=["products"])
-# def get_all_products(request):
-#     """
-#     Retrieve all products.
-#     """
-#     products = Product.objects.all()
-#     product_list = [
-#         {
-#             "id": product.id,
-#             "product_name": product.product_name,
-#             "product_category": product.product_category.category_name if product.product_category else None,
-#             "product_image": default_storage.url(product.product_image) if product.product_image else None,
-#             "product_description": product.product_description,
-#             "product_price": product.product_price,
-#             "product_upcoming": product.product_upcoming,
-#             "created_at": product.created_at,
-#         }
-#         for product in products
-#     ]
-#     return JsonResponse({"success": True, "data": product_list})
-
 @api.get("/products", tags=["products"])
 def get_all_products(request):
     """
