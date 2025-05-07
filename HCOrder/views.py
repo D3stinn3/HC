@@ -111,12 +111,13 @@ def delete_order(request, order_id: int):
     return JsonResponse({"success": True, "message": "Order deleted successfully"})
 
 """Get Orders By User ID"""
-@api.get("/orders/user/{user_id}", tags=["orders"])
-def get_orders_by_user(request, user_id: int):
+
+@api.get("/orders/user/clerk/{clerk_id}", tags=["orders"])
+def get_orders_by_clerk_id(request, clerk_id: str):
     """
-    Retrieve all orders made by a specific user.
+    Retrieve all orders made by a user using their Clerk ID.
     """
-    user = get_object_or_404(HomeChoiceUser, id=user_id)
+    user = get_object_or_404(HomeChoiceUser, clerkId=clerk_id)
     orders = Order.objects.filter(user=user)
 
     data = [
@@ -132,6 +133,4 @@ def get_orders_by_user(request, user_id: int):
         }
         for order in orders
     ]
-    return JsonResponse({"success": True, "user_id": user_id, "data": data})
-
-
+    return JsonResponse({"success": True, "clerk_id": clerk_id, "data": data})
