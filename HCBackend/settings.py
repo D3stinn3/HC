@@ -23,6 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY')
+# SECRET_KEY = get_random_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG')
@@ -46,7 +47,8 @@ INSTALLED_APPS = [
     'HCShop',
     'ninja_extra',
     'corsheaders',
-    'ninja_jwt'
+    'ninja_jwt',
+    'storages'
 ]
 
 MIDDLEWARE = [
@@ -181,6 +183,7 @@ AWS_ACCESS_KEY_ID=config('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY=config('AWS_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME=config('AWS_STORAGE_BUCKET_NAME')
 AWS_S3_REGION_NAME=config('AWS_S3_REGION_NAME')
+AWS_S3_CUSTOM_DOMAIN='%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
