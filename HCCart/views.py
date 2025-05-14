@@ -21,6 +21,9 @@ from HCUser.utils.permission_auth_util import ClerkAuthenticationPermission
 from HCUser.utils.auth_util import clerk_authenticated
 
 from django.contrib.auth.decorators import login_required
+from HCCart.models import CheckoutSession, Cart
+from HCCart.schemas import CheckoutSessionCreateSchema, CheckoutSessionOutSchema
+import uuid
 
 """NinjaExtra API FOR HomeChoice"""
 
@@ -72,5 +75,49 @@ def clear_cart(request):
     cart.items.all().delete()
 
     return JsonResponse({"success": True, "message": "Cart cleared."})
+
+"""Create Checkout Session"""
+
+@api.post("/cart/checkout", tags=["cart"])
+def create_checkout_session(request, payload: CheckoutSessionCreateSchema):
+    """
+    Initiate a checkout session for the user's cart.
+    """
+    cart = get_object_or_404(Cart, id=payload.cart_id, user=request.user)
+
+    if not cart.items.exists():
+        return JsonResponse({"success": False, "message": "Cart is empty."}, status=400)
+
+    if hasattr(cart, 'checkout_session') and cart.checkout_session.status == 'pending':
+        return JsonResponse({
+            "success": False,
+            "message": "Checkout session already exists.",
+            "reference": cart.checkout_session.reference
+        }, status=400)
+
+    reference = f"HC-{uuid.uuid4().hex[:10].upper()}"
+
+    session = CheckoutSession.objects.create(
+        cart=cart,
+        user=request.user,
+        clerk_id=request.user.clerkId or "",
+        reference=reference,
+        amount=payload.amount,
+        status="pending"
+    )
+
+    session_data = {
+        "id": session.id,
+        "cart_id": session.cart.id,
+        "user_id": session.user.id,
+        "clerk_id": session.clerk_id,
+        "reference": session.reference,
+        "amount": float(session.amount),
+        "status": session.status,
+        "created_at": session.created_at,
+        "updated_at": session.updated_at,
+    }
+
+    return JsonResponse({"success": True, "data": session_data})
 
 
