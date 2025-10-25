@@ -193,7 +193,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # CORS Security
 CORS_ALLOWED_ORIGINS = [
     'https://homechoice-production.up.railway.app',
-    'https://admin-homechoice.vercel.app'
+    'https://admin-homechoice.vercel.app',
+    'https://admin.homechoicedepot.com'
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -201,5 +202,6 @@ CORS_ALLOW_CREDENTIALS = True
 # CSRF Trusted Origins
 CSRF_TRUSTED_ORIGINS = [
     'https://homechoice-production.up.railway.app',
-    'https://admin-homechoice.vercel.app'
+    'https://admin-homechoice.vercel.app',
+    'https://admin.homechoicedepot.com'
 ]
