@@ -1,6 +1,8 @@
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from ninja_extra import NinjaExtraAPI
+from ninja_extra.permissions import IsAuthenticated
+from ninja_jwt.authentication import JWTAuth
 from ninja import Schema
 from typing import Optional
 from datetime import datetime
@@ -14,7 +16,7 @@ from HCProduct.models import Product
 from .models import Order, Payment, OrderItem
 from .schemas import OrderSchema, OrderOutSchema, BulkOrderSchema, OrderItemSchema, PaymentSchema, PaymentVerifySchema, PaymentOutSchema
 
-api = NinjaExtraAPI(urls_namespace='orderapi')
+api = NinjaExtraAPI(urls_namespace='orderapi', auth=JWTAuth())
 
 """Get All Orders"""
 @api.get("/orders", tags=["orders"])
@@ -83,13 +85,16 @@ def get_order_by_id(request, order_id: int):
 
 """Create Order (Bulk)"""
 
-@api.post("/orders", tags=["orders"])
+@api.post("/orders", tags=["orders"], permissions=[IsAuthenticated])
 def create_order(request, payload: BulkOrderSchema):
     """
     Create a new order with multiple products and quantities.
     """
     try:
-        user = request.user  # Ensure user is authenticated
+        # Auth guard
+        if not request.user or not request.user.is_authenticated:
+            return JsonResponse({"success": False, "message": "Unauthorized"}, status=401)
+        user = request.user
         
         # Create the order
         order = Order.objects.create(
