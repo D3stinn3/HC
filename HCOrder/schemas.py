@@ -1,6 +1,18 @@
 from ninja import Schema
-from typing import Optional
+from typing import Optional, List
 from datetime import date, time, datetime
+
+class OrderItemSchema(Schema):
+    product_id: int
+    quantity: int
+    price: float
+
+
+class BulkOrderSchema(Schema):
+    cart_items: List[OrderItemSchema]
+    total_amount: float
+    status: Optional[str] = "pending"
+
 
 class OrderSchema(Schema):
     product_id: int

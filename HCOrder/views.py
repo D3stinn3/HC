@@ -11,8 +11,8 @@ from decouple import config
 
 from HCUser.models import HomeChoiceUser
 from HCProduct.models import Product
-from .models import Order, Payment
-from .schemas import OrderSchema, OrderOutSchema, PaymentSchema, PaymentVerifySchema, PaymentOutSchema
+from .models import Order, Payment, OrderItem
+from .schemas import OrderSchema, OrderOutSchema, BulkOrderSchema, OrderItemSchema, PaymentSchema, PaymentVerifySchema, PaymentOutSchema
 
 api = NinjaExtraAPI(urls_namespace='orderapi')
 
@@ -20,23 +20,33 @@ api = NinjaExtraAPI(urls_namespace='orderapi')
 @api.get("/orders", tags=["orders"])
 def get_all_orders(request):
     """
-    Retrieve all orders.
+    Retrieve all orders with their items.
     """
-    orders = Order.objects.select_related("user", "product").all()
-    data = [
-        {
+    orders = Order.objects.select_related("user").prefetch_related("items__product").all()
+    data = []
+    
+    for order in orders:
+        items = []
+        for item in order.items.all():
+            items.append({
+                "product_id": item.product.id,
+                "product_name": item.product.product_name,
+                "quantity": item.quantity,
+                "price": float(item.price),
+                "total": float(item.total_price())
+            })
+        
+        data.append({
             "id": order.id,
             "user_id": order.user.id,
-            "product_id": order.product.id,
-            "product_name": order.product.product_name,
-            "order_price": order.order_price,
+            "total_amount": float(order.total_amount) if order.total_amount else float(order.get_total_amount()),
             "status": order.status,
             "order_date": order.order_date,
             "order_time": order.order_time,
             "created_at": order.created_at,
-        }
-        for order in orders
-    ]
+            "items": items
+        })
+    
     return JsonResponse({"success": True, "data": data})
 
 """Get Order By ID"""
@@ -45,42 +55,88 @@ def get_order_by_id(request, order_id: int):
     """
     Retrieve a single order by its ID.
     """
-    order = get_object_or_404(Order, id=order_id)
+    order = get_object_or_404(Order.objects.prefetch_related("items__product"), id=order_id)
+    
+    items = []
+    for item in order.items.all():
+        items.append({
+            "product_id": item.product.id,
+            "product_name": item.product.product_name,
+            "quantity": item.quantity,
+            "price": float(item.price),
+            "total": float(item.total_price())
+        })
+    
     return JsonResponse({
         "success": True,
         "data": {
             "id": order.id,
             "user_id": order.user.id,
-            "product_id": order.product.id,
-            "product_name": order.product.product_name,
-            "order_price": order.order_price,
+            "total_amount": float(order.total_amount) if order.total_amount else float(order.get_total_amount()),
             "status": order.status,
             "order_date": order.order_date,
             "order_time": order.order_time,
             "created_at": order.created_at,
+            "items": items
         }
     })
 
-"""Create Order By Product ID"""
+"""Create Order (Bulk)"""
 
 @api.post("/orders", tags=["orders"])
-def create_order(request, payload: OrderSchema):
+def create_order(request, payload: BulkOrderSchema):
     """
-    Create a new order based on product.
+    Create a new order with multiple products and quantities.
     """
-    user = request.user  # Ensure user is authenticated
-    product = get_object_or_404(Product, id=payload.product_id)
+    try:
+        user = request.user  # Ensure user is authenticated
+        
+        # Create the order
+        order = Order.objects.create(
+            user=user,
+            total_amount=payload.total_amount,
+            status=payload.status or 'pending',
+            order_date=timezone.now().date(),
+            order_time=timezone.now().time()
+        )
+        
+        # Create order items for each cart item
+        order_items = []
+        for cart_item in payload.cart_items:
+            product = get_object_or_404(Product, id=cart_item.product_id)
+            
+            order_item = OrderItem.objects.create(
+                order=order,
+                product=product,
+                quantity=cart_item.quantity,
+                price=cart_item.price
+            )
+            order_items.append({
+                "product_id": product.id,
+                "product_name": product.product_name,
+                "quantity": cart_item.quantity,
+                "price": float(cart_item.price),
+                "total": float(order_item.total_price())
+            })
+        
+        # Calculate total amount from items
+        order.total_amount = order.get_total_amount()
+        order.save()
 
-    order = Order.objects.create(
-        user=user,
-        product=product,
-        order_price=payload.order_price,
-        status=payload.status or 'pending',
-        order_date=payload.order_date or timezone.now().date(),
-        order_time=payload.order_time or timezone.now().time()
-    )
-
-    return JsonResponse({"success": True, "message": "Order created", "order_id": order.id})
+        return JsonResponse({
+            "success": True,
+            "message": "Order created successfully",
+            "order_id": order.id,
+            "total_amount": float(order.total_amount),
+            "items": order_items
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "error": "Failed to create order",
+            "details": str(e)
+        }, status=500)
 
 """Update Order By ID"""
 
@@ -121,21 +177,30 @@ def get_orders_by_clerk_id(request, clerk_id: str):
     Retrieve all orders made by a user using their Clerk ID.
     """
     user = get_object_or_404(HomeChoiceUser, clerkId=clerk_id)
-    orders = Order.objects.filter(user=user)
+    orders = Order.objects.prefetch_related("items__product").filter(user=user)
 
-    data = [
-        {
+    data = []
+    for order in orders:
+        items = []
+        for item in order.items.all():
+            items.append({
+                "product_id": item.product.id,
+                "product_name": item.product.product_name,
+                "quantity": item.quantity,
+                "price": float(item.price),
+                "total": float(item.total_price())
+            })
+        
+        data.append({
             "id": order.id,
-            "product_id": order.product.id,
-            "product_name": order.product.product_name,
-            "order_price": order.order_price,
+            "total_amount": float(order.total_amount) if order.total_amount else float(order.get_total_amount()),
             "status": order.status,
             "order_date": order.order_date,
             "order_time": order.order_time,
             "created_at": order.created_at,
-        }
-        for order in orders
-    ]
+            "items": items
+        })
+    
     return JsonResponse({"success": True, "clerk_id": clerk_id, "data": data})
 
 
