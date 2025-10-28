@@ -10,6 +10,9 @@ from django.utils import timezone
 import requests
 import json
 from decouple import config
+import hmac
+import hashlib
+import time
 
 from HCUser.models import HomeChoiceUser
 from HCProduct.models import Product
@@ -255,15 +258,44 @@ def create_payment(request, payload: PaymentSchema):
 
 """Verify Payment with Paystack"""
 
-@api.post("/payments/verify", tags=["payments"])
+@api.post("/payments/verify", tags=["payments"], auth=None)
 def verify_payment(request, payload: PaymentVerifySchema):
     """
     Handle Paystack webhook and verify payment.
     This endpoint receives Paystack webhooks and updates payment status.
     """
     try:
-        event = payload.event
-        data = payload.data
+        # Internal HMAC Auth (Option A)
+        raw_body = request.body.decode("utf-8") if hasattr(request, "body") else ""
+        header_ts = request.headers.get("X-Internal-Timestamp") or request.META.get("HTTP_X_INTERNAL_TIMESTAMP")
+        header_sig = request.headers.get("X-Internal-Signature") or request.META.get("HTTP_X_INTERNAL_SIGNATURE")
+
+        if not header_ts or not header_sig:
+            return JsonResponse({"success": False, "message": "Unauthorized"}, status=401)
+
+        try:
+            ts = int(header_ts)
+        except Exception:
+            return JsonResponse({"success": False, "message": "Unauthorized"}, status=401)
+
+        tolerance = int(config("TIMESTAMP_TOLERANCE_SECONDS", default=300))
+        now = int(time.time())
+        if abs(now - ts) > tolerance:
+            return JsonResponse({"success": False, "message": "Unauthorized (stale request)"}, status=401)
+
+        secret = config("INTERNAL_VERIFY_SECRET", default=None)
+        if not secret:
+            return JsonResponse({"success": False, "message": "Server misconfigured"}, status=500)
+
+        message = f"{ts}.{raw_body}".encode("utf-8")
+        expected_sig = hmac.new(secret.encode("utf-8"), message, hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected_sig, header_sig.lower()):
+            return JsonResponse({"success": False, "message": "Unauthorized"}, status=401)
+
+        # Parse Paystack payload after passing HMAC
+        data_json = json.loads(raw_body) if raw_body else {}
+        event = data_json.get("event")
+        data = data_json.get("data") or {}
         
         # Extract reference from Paystack data
         reference = data.get('reference')
