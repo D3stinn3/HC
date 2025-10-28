@@ -85,7 +85,7 @@ def get_order_by_id(request, order_id: int):
 
 """Create Order (Bulk)"""
 
-@api.post("/orders", tags=["orders"], permissions=[IsAuthenticated])
+@api.post("/orders", tags=["orders"])
 def create_order(request, payload: BulkOrderSchema):
     """
     Create a new order with multiple products and quantities.
