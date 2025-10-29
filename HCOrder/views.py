@@ -40,6 +40,41 @@ from .schemas import (
 
 api = NinjaExtraAPI(urls_namespace='orderapi', auth=JWTAuth())
 
+# Simple RBAC: staff/admin only
+class IsStaff(Schema):
+    pass
+
+def require_staff(request):
+    try:
+        user = getattr(request, 'user', None)
+        if user and getattr(user, 'is_authenticated', False) and (getattr(user, 'is_staff', False) or getattr(user, 'is_superuser', False)):
+            return True
+    except Exception:
+        pass
+    return False
+"""Webhook Logs (tail)"""
+
+@api.get("/webhooks/logs", tags=["webhooks"])
+def get_webhook_logs(request, limit: int = 100):
+    if not require_staff(request):
+        return JsonResponse({"success": False, "message": "Forbidden"}, status=403)
+    try:
+        from django.conf import settings
+        import os
+        log_path = os.path.join(getattr(settings, 'BASE_DIR', ''), 'logs', 'paystack_webhooks.log')
+        lines = []
+        if os.path.exists(log_path):
+            with open(log_path, 'r', encoding='utf-8') as f:
+                for line in f.readlines()[-limit:]:
+                    try:
+                        lines.append(json.loads(line))
+                    except Exception:
+                        continue
+        return JsonResponse({"success": True, "data": lines})
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+
 """Get All Orders"""
 @api.get("/orders", tags=["orders"])
 def get_all_orders(request):
@@ -175,10 +210,46 @@ def list_orders(request,
     })
 
 
+"""Basic Orders Stats (last 30 days and totals)"""
+
+@api.get("/orders/stats", tags=["orders"])
+def orders_stats(request):
+    from datetime import timedelta
+    now = timezone.now()
+    start = now - timedelta(days=30)
+
+    qs = Order.objects.filter(created_at__gte=start)
+    total_revenue = 0.0
+    status_counts = {}
+    daily = {}
+    for st, _ in Order.STATUS_CHOICES:
+        status_counts[st] = 0
+
+    for o in qs:
+        amt = float(o.total_amount or o.get_total_amount())
+        total_revenue += amt
+        status_counts[o.status] = status_counts.get(o.status, 0) + 1
+        day = o.created_at.date().isoformat()
+        daily[day] = daily.get(day, 0.0) + amt
+
+    series = sorted([{ 'date': d, 'revenue': v } for d, v in daily.items()], key=lambda x: x['date'])
+
+    return JsonResponse({
+        'success': True,
+        'data': {
+            'total_revenue_30d': round(total_revenue, 2),
+            'status_counts_30d': status_counts,
+            'daily_revenue_30d': series,
+        }
+    })
+
+
 """Set Order Status with reason (admin)"""
 
 @api.post("/orders/{order_id}/status", tags=["orders"])
 def set_order_status(request, order_id: int, payload: OrderStatusUpdateSchema):
+    if not require_staff(request):
+        return JsonResponse({"success": False, "message": "Forbidden"}, status=403)
     order = get_object_or_404(Order, id=order_id)
 
     allowed = [s[0] for s in Order.STATUS_CHOICES]
@@ -422,6 +493,8 @@ def delete_order_item(request, order_id: int, item_id: int):
 
 @api.post("/refunds", tags=["refunds"])
 def create_refund(request, payload: RefundCreateSchema):
+    if not require_staff(request):
+        return JsonResponse({"success": False, "message": "Forbidden"}, status=403)
     payment = get_object_or_404(Payment, id=payload.payment_id)
     order = payment.order
 
@@ -493,6 +566,8 @@ def list_refunds(request, order_id: Optional[int] = None, payment_id: Optional[i
 
 @api.put("/refunds/{refund_id}/status", tags=["refunds"])
 def update_refund_status(request, refund_id: int, status: str):
+    if not require_staff(request):
+        return JsonResponse({"success": False, "message": "Forbidden"}, status=403)
     if status not in ['processed', 'failed']:
         return JsonResponse({"success": False, "message": "Invalid status"}, status=400)
 
@@ -533,6 +608,8 @@ def update_refund_status(request, refund_id: int, status: str):
 
 @api.post("/shipments", tags=["shipments"])
 def create_shipment(request, payload: ShipmentCreateSchema):
+    if not require_staff(request):
+        return JsonResponse({"success": False, "message": "Forbidden"}, status=403)
     order = get_object_or_404(Order, id=payload.order_id)
 
     shipment = Shipment.objects.create(
@@ -637,6 +714,8 @@ def get_shipment(request, shipment_id: int):
 
 @api.put("/shipments/{shipment_id}", tags=["shipments"])
 def update_shipment(request, shipment_id: int, payload: ShipmentUpdateSchema):
+    if not require_staff(request):
+        return JsonResponse({"success": False, "message": "Forbidden"}, status=403)
     s = get_object_or_404(Shipment, id=shipment_id)
     if payload.carrier is not None:
         s.carrier = payload.carrier
@@ -837,6 +916,24 @@ def verify_payment(request, payload: PaymentVerifySchema):
                 payment.set_paystack_response(paystack_data['data'])
         
         payment.save()
+
+        # Webhook logging to file (no DB). Store minimal info
+        try:
+            from django.conf import settings
+            import os
+            log_dir = os.path.join(getattr(settings, 'BASE_DIR', ''), 'logs')
+            os.makedirs(log_dir, exist_ok=True)
+            log_path = os.path.join(log_dir, 'paystack_webhooks.log')
+            with open(log_path, 'a', encoding='utf-8') as f:
+                f.write(json.dumps({
+                    'ts': int(time.time()),
+                    'event': event,
+                    'reference': reference,
+                    'payment_id': payment.id,
+                    'status': payment.payment_status,
+                }) + "\n")
+        except Exception:
+            pass
         
         return JsonResponse({
             "success": True,
@@ -921,9 +1018,8 @@ def get_payments_by_clerk(request, clerk_id: str):
 
 @api.get("/payments", tags=["payments"])
 def get_all_payments(request):
-    """
-    Get all payment records (admin only recommended).
-    """
+    if not require_staff(request):
+        return JsonResponse({"success": False, "message": "Forbidden"}, status=403)
     payments = Payment.objects.select_related('order').all()
     
     payment_list = []
@@ -951,6 +1047,8 @@ def get_all_payments(request):
 
 @api.put("/payments/{payment_id}/status", tags=["payments"])
 def update_payment_status(request, payment_id: int, status: str):
+    if not require_staff(request):
+        return JsonResponse({"success": False, "message": "Forbidden"}, status=403)
     """
     Manually update payment status (admin only recommended).
     """
