@@ -178,3 +178,27 @@ class ShipmentItem(models.Model):
     def __str__(self):
         return f"ShipmentItem #{self.id} - Shipment {self.shipment_id}"
 
+
+class APILog(models.Model):
+    endpoint = models.CharField(max_length=255)
+    method = models.CharField(max_length=10)
+    status_code = models.IntegerField(null=True, blank=True)
+    response_time_ms = models.IntegerField(null=True, blank=True)
+    user_id = models.IntegerField(null=True, blank=True)
+    error_message = models.TextField(null=True, blank=True)
+    request_body = models.TextField(null=True, blank=True)
+    response_body = models.TextField(null=True, blank=True)
+    ip_address = models.CharField(max_length=45, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['endpoint']),
+            models.Index(fields=['status_code']),
+        ]
+
+    def __str__(self):
+        return f"{self.method} {self.endpoint} - {self.status_code} - {self.created_at}"
+

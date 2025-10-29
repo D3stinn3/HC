@@ -18,7 +18,8 @@ import time
 
 from HCUser.models import HomeChoiceUser
 from HCProduct.models import Product
-from .models import Order, Payment, OrderItem, Refund, Shipment, ShipmentItem, OrderStatusHistory
+from .models import Order, Payment, OrderItem, Refund, Shipment, ShipmentItem, OrderStatusHistory, APILog
+from .api_logger import log_api_call
 from .schemas import (
     OrderSchema,
     OrderOutSchema,
@@ -128,9 +129,42 @@ def get_order_history(request, order_id: int):
     return JsonResponse({"success": True, "order_id": order.id, "data": data})
 
 
+"""Get API Logs"""
+@api.get("/api-logs", tags=["admin"])
+def get_api_logs(request, limit: int = 200, endpoint: Optional[str] = None, status_code: Optional[int] = None):
+    if not require_staff(request):
+        return JsonResponse({"success": False, "message": "Forbidden"}, status=403)
+    
+    qs = APILog.objects.all()
+    if endpoint:
+        qs = qs.filter(endpoint__icontains=endpoint)
+    if status_code:
+        qs = qs.filter(status_code=status_code)
+    qs = qs[:limit]
+    
+    logs = []
+    for log in qs:
+        logs.append({
+            "id": log.id,
+            "endpoint": log.endpoint,
+            "method": log.method,
+            "status_code": log.status_code,
+            "response_time_ms": log.response_time_ms,
+            "user_id": log.user_id,
+            "error_message": log.error_message,
+            "request_body": log.request_body,
+            "response_body": log.response_body[:500] if log.response_body else None,
+            "ip_address": log.ip_address,
+            "created_at": log.created_at.isoformat(),
+        })
+    
+    return JsonResponse({"success": True, "data": logs})
+
+
 """Paginated and Filterable Orders"""
 
 @api.get("/orders/list", tags=["orders"])
+@log_api_call
 def list_orders(request,
                 page: int = 1,
                 page_size: int = 20,
@@ -293,6 +327,7 @@ def set_order_status(request, order_id: int, payload: OrderStatusUpdateSchema):
 
 """Get Order By ID"""
 @api.get("/orders/{order_id}", tags=["orders"])
+@log_api_call
 def get_order_by_id(request, order_id: int):
     """
     Retrieve a single order by its ID.
