@@ -35,6 +35,7 @@ from .schemas import (
     ShipmentCreateSchema,
     ShipmentUpdateSchema,
     ShipmentOutSchema,
+    OrderStatusUpdateSchema,
 )
 
 api = NinjaExtraAPI(urls_namespace='orderapi', auth=JWTAuth())
@@ -169,6 +170,43 @@ def list_orders(request,
         "total_pages": page_obj.paginator.num_pages,
         "total_items": page_obj.paginator.count,
         "data": items,
+    })
+
+
+"""Set Order Status with reason (admin)"""
+
+@api.post("/orders/{order_id}/status", tags=["orders"])
+def set_order_status(request, order_id: int, payload: OrderStatusUpdateSchema):
+    order = get_object_or_404(Order, id=order_id)
+
+    allowed = [s[0] for s in Order.STATUS_CHOICES]
+    if payload.status not in allowed:
+        return JsonResponse({"success": False, "message": "Invalid status"}, status=400)
+
+    previous_status = order.status
+    order.status = payload.status
+    order.save()
+
+    # Explicit history entry including reason and actor when available
+    actor = None
+    try:
+        if getattr(request, 'user', None) and request.user.is_authenticated:
+            actor = HomeChoiceUser.objects.filter(id=request.user.id).first()
+    except Exception:
+        actor = None
+
+    OrderStatusHistory.objects.create(
+        order=order,
+        from_status=previous_status,
+        to_status=payload.status,
+        reason=payload.reason or '',
+        changed_by=actor,
+    )
+
+    return JsonResponse({
+        "success": True,
+        "message": "Status updated",
+        "data": {"id": order.id, "status": order.status},
     })
 
 """Get Order By ID"""

@@ -49,6 +49,11 @@ class OrderItemUpdateSchema(Schema):
     price: Optional[float] = None
 
 
+class OrderStatusUpdateSchema(Schema):
+    status: str
+    reason: Optional[str] = None
+
+
 
 class PaymentSchema(Schema):
     order_id: int
