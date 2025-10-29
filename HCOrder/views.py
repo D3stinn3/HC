@@ -53,6 +53,7 @@ def get_all_orders(request):
         items = []
         for item in order.items.all():
             items.append({
+                "order_item_id": item.id,
                 "product_id": item.product.id,
                 "product_name": item.product.product_name,
                 "quantity": item.quantity,
@@ -143,6 +144,7 @@ def list_orders(request,
         order_items = []
         for item in order.items.all():
             order_items.append({
+                "order_item_id": item.id,
                 "product_id": item.product.id,
                 "product_name": item.product.product_name,
                 "quantity": item.quantity,
@@ -220,6 +222,7 @@ def get_order_by_id(request, order_id: int):
     items = []
     for item in order.items.all():
         items.append({
+            "order_item_id": item.id,
             "product_id": item.product.id,
             "product_name": item.product.product_name,
             "quantity": item.quantity,
