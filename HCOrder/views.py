@@ -256,6 +256,7 @@ def list_orders(request,
 """Basic Orders Stats (last 30 days and totals)"""
 
 @api.get("/orders/stats", tags=["orders"])
+@log_api_call
 def orders_stats(request):
     from datetime import timedelta
     now = timezone.now()
@@ -1062,6 +1063,7 @@ def get_payments_by_clerk(request, clerk_id: str):
 """Get All Payments"""
 
 @api.get("/payments", tags=["payments"])
+@log_api_call
 def get_all_payments(request):
     if not require_staff(request):
         return JsonResponse({"success": False, "message": "Forbidden"}, status=403)
