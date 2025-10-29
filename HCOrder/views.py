@@ -143,8 +143,17 @@ def list_orders(request,
     """
     Return orders with server-side pagination and common filters.
     """
-    qs = Order.objects.select_related("user").prefetch_related("items__product").all().order_by("-created_at")
+    # Only include orders with a successful payment by default
+    qs = (
+        Order.objects
+        .select_related("user")
+        .prefetch_related("items__product")
+        .filter(payments__payment_status='success')
+        .order_by("-created_at")
+        .distinct()
+    )
 
+    # Optional status filter still applies on top of paid constraint
     if status:
         qs = qs.filter(status=status)
 
@@ -630,10 +639,12 @@ def create_shipment(request, payload: ShipmentCreateSchema):
             quantity=it.quantity,
         )
 
-    # If order was paid, moving to processing when shipment is created
-    if order.status in ['paid', 'pending']:
-        order.status = 'processing'
-        order.save()
+    # Only transition to processing if the order has a successful payment
+    has_success_payment = Payment.objects.filter(order=order, payment_status='success').exists()
+    if not has_success_payment:
+        return JsonResponse({"success": False, "message": "Order is not paid"}, status=400)
+    order.status = 'processing'
+    order.save()
 
     return JsonResponse({
         "success": True,
@@ -905,11 +916,10 @@ def verify_payment(request, payload: PaymentVerifySchema):
                 payment.verified_at = timezone.now()
                 payment.set_paystack_response(paystack_data['data'])
                 
-                # Update order status to 'paid' upon successful verification
+                # Link payment to order; keep order status unchanged here
                 order = payment.order
-                order.status = 'paid'
                 order.payment = payment
-                order.save()
+                order.save(update_fields=["payment", "updated_at"])
                 
             else:
                 payment.payment_status = 'failed'
