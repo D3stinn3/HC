@@ -30,6 +30,24 @@ class OrderOutSchema(Schema):
     order_date: date
     order_time: time
     created_at: date
+class OrderUpdateSchema(Schema):
+    status: Optional[str] = None
+    order_date: Optional[date] = None
+    order_time: Optional[time] = None
+    shipping_address: Optional[str] = None
+    billing_address: Optional[str] = None
+
+
+class OrderItemCreateSchema(Schema):
+    product_id: int
+    quantity: int
+    price: float
+
+
+class OrderItemUpdateSchema(Schema):
+    quantity: Optional[int] = None
+    price: Optional[float] = None
+
 
 
 class PaymentSchema(Schema):
@@ -59,3 +77,60 @@ class PaymentOutSchema(Schema):
     created_at: datetime
     updated_at: datetime
 
+
+class RefundCreateSchema(Schema):
+    payment_id: int
+    amount: float
+    currency: Optional[str] = "KES"
+    reason: Optional[str] = None
+
+
+class RefundOutSchema(Schema):
+    id: int
+    order_id: int
+    payment_id: int
+    amount: float
+    currency: str
+    reason: Optional[str]
+    status: str
+    processed_at: Optional[datetime]
+    created_at: datetime
+    updated_at: datetime
+
+
+class ShipmentItemInputSchema(Schema):
+    order_item_id: int
+    quantity: int
+
+
+class ShipmentCreateSchema(Schema):
+    order_id: int
+    carrier: Optional[str] = None
+    tracking_number: Optional[str] = None
+    status: Optional[str] = "pending"
+    shipped_at: Optional[datetime] = None
+    delivered_at: Optional[datetime] = None
+    notes: Optional[str] = None
+    items: List[ShipmentItemInputSchema]
+
+
+class ShipmentUpdateSchema(Schema):
+    carrier: Optional[str] = None
+    tracking_number: Optional[str] = None
+    status: Optional[str] = None
+    shipped_at: Optional[datetime] = None
+    delivered_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+
+class ShipmentOutSchema(Schema):
+    id: int
+    order_id: int
+    carrier: Optional[str]
+    tracking_number: Optional[str]
+    status: str
+    shipped_at: Optional[datetime]
+    delivered_at: Optional[datetime]
+    notes: Optional[str]
+    created_at: datetime
+    updated_at: datetime
