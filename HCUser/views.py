@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from ninja_extra import NinjaExtraAPI, api_controller, http_get
 from ninja_extra.permissions import IsAuthenticated
-from .schemas import SignupSchema, ResponseSchema, LoginSchema
+from .schemas import SignupSchema, ResponseSchema, LoginSchema, StaffUpdateSchema
 from .models import HomeChoiceUser
 from django.contrib.auth import authenticate, logout, login
 from ninja_jwt.controller import NinjaJWTDefaultController
@@ -16,6 +16,7 @@ from django.http import JsonResponse
 from ninja_jwt.authentication import JWTAuth
 from HCUser.utils.permission_auth_util import ClerkAuthenticationPermission
 from HCUser.utils.auth_util import clerk_authenticated
+from decouple import config
 
 """NinjaExtra API FOR HomeChoice"""
 
@@ -220,6 +221,32 @@ def user_logout(request):
         return JsonResponse({"success": True, "message": "Logout successful. CSRF token removed."})
 
     return JsonResponse({"success": False, "message": "User is not authenticated."}, status=401)
+
+
+"""Admin role sync (from Clerk webhook via admin app)"""
+
+@api.post("/set_staff", response=ResponseSchema, tags=["user"], auth=None)
+def set_staff(request, payload: StaffUpdateSchema):
+    """
+    Sets is_staff for a user identified by Clerk ID. Requires INTERNAL_ADMIN_SECRET header.
+    """
+    expected_secret = config("INTERNAL_ADMIN_SECRET", default="")
+    provided = request.headers.get("X-Admin-Secret") or request.META.get("HTTP_X_ADMIN_SECRET", "")
+    if not expected_secret or provided != expected_secret:
+        return JsonResponse({"success": False, "message": "Unauthorized"}, status=403)
+
+    user = HomeChoiceUser.objects.filter(clerkId=payload.clerk_id).first()
+    if not user:
+        return JsonResponse({"success": False, "message": "User not found"}, status=404)
+
+    user.is_staff = payload.is_staff
+    user.save(update_fields=["is_staff"])
+
+    return JsonResponse({
+        "success": True,
+        "message": "Staff flag updated",
+        "data": {"email": user.email, "is_staff": user.is_staff}
+    })
 
 
 

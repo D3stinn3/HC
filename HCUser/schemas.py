@@ -19,3 +19,7 @@ class SignupSchema(BaseModel):
     is_staff: bool = False
     is_superuser: bool = False
 
+
+class StaffUpdateSchema(BaseModel):
+    clerk_id: str
+    is_staff: bool
