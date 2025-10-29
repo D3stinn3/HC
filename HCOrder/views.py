@@ -18,7 +18,7 @@ import time
 
 from HCUser.models import HomeChoiceUser
 from HCProduct.models import Product
-from .models import Order, Payment, OrderItem, Refund, Shipment, ShipmentItem
+from .models import Order, Payment, OrderItem, Refund, Shipment, ShipmentItem, OrderStatusHistory
 from .schemas import (
     OrderSchema,
     OrderOutSchema,
@@ -71,6 +71,24 @@ def get_all_orders(request):
         })
     
     return JsonResponse({"success": True, "data": data})
+
+
+"""Get Order Status History"""
+
+@api.get("/orders/{order_id}/history", tags=["orders"])
+def get_order_history(request, order_id: int):
+    order = get_object_or_404(Order, id=order_id)
+    history = OrderStatusHistory.objects.filter(order=order).order_by('changed_at')
+    data = []
+    for h in history:
+        data.append({
+            "from_status": h.from_status,
+            "to_status": h.to_status,
+            "reason": h.reason,
+            "changed_by": h.changed_by_id,
+            "changed_at": h.changed_at,
+        })
+    return JsonResponse({"success": True, "order_id": order.id, "data": data})
 
 
 """Paginated and Filterable Orders"""
