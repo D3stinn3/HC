@@ -249,6 +249,24 @@ def set_staff(request, payload: StaffUpdateSchema):
     })
 
 
+"""Check if user is staff (by Clerk ID)"""
+
+@api.get("/check_staff/{clerk_id}", response=ResponseSchema, tags=["user"], auth=None)
+def check_staff(request, clerk_id: str):
+    """
+    Returns is_staff status for a user by Clerk ID. No auth required (public check).
+    """
+    user = HomeChoiceUser.objects.filter(clerkId=clerk_id).first()
+    if not user:
+        return JsonResponse({"success": False, "message": "User not found", "data": {"is_staff": False}}, status=404)
+
+    return JsonResponse({
+        "success": True,
+        "message": "Staff status retrieved",
+        "data": {"is_staff": user.is_staff, "email": user.email}
+    })
+
+
 
 """Delete User"""
 
