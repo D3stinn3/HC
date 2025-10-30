@@ -40,6 +40,8 @@ class OrderItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='order_items')
     quantity = models.PositiveIntegerField(default=1)
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    # Snapshot of selected weight/variant at checkout (e.g., "500g", "1kg")
+    weight_variant = models.CharField(max_length=50, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

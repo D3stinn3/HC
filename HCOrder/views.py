@@ -229,6 +229,7 @@ def list_orders(request,
                 "product_name": item.product.product_name,
                 "quantity": item.quantity,
                 "price": float(item.price),
+                "weight_variant": item.weight_variant,
                 "total": float(item.total_price()),
             })
 
@@ -345,6 +346,7 @@ def get_order_by_id(request, order_id: int):
             "product_name": item.product.product_name,
             "quantity": item.quantity,
             "price": float(item.price),
+            "weight_variant": item.weight_variant,
             "total": float(item.total_price())
         })
     
@@ -393,13 +395,15 @@ def create_order(request, payload: BulkOrderSchema):
                 order=order,
                 product=product,
                 quantity=cart_item.quantity,
-                price=cart_item.price
+                price=cart_item.price,
+                weight_variant=getattr(cart_item, 'weight_variant', None)
             )
             order_items.append({
                 "product_id": product.id,
                 "product_name": product.product_name,
                 "quantity": cart_item.quantity,
                 "price": float(cart_item.price),
+                "weight_variant": order_item.weight_variant,
                 "total": float(order_item.total_price())
             })
         
@@ -471,6 +475,7 @@ def add_order_item(request, order_id: int, payload: OrderItemCreateSchema):
         product=product,
         quantity=payload.quantity,
         price=payload.price,
+        weight_variant=payload.weight_variant,
     )
 
     order.total_amount = order.get_total_amount()
@@ -484,6 +489,7 @@ def add_order_item(request, order_id: int, payload: OrderItemCreateSchema):
             "product_id": item.product.id,
             "quantity": item.quantity,
             "price": float(item.price),
+            "weight_variant": item.weight_variant,
             "total": float(item.total_price()),
         },
         "order_total": float(order.total_amount),
@@ -512,6 +518,7 @@ def update_order_item(request, order_id: int, item_id: int, payload: OrderItemUp
             "product_id": item.product.id,
             "quantity": item.quantity,
             "price": float(item.price),
+            "weight_variant": item.weight_variant,
             "total": float(item.total_price()),
         },
         "order_total": float(order.total_amount),

@@ -6,6 +6,7 @@ class OrderItemSchema(Schema):
     product_id: int
     quantity: int
     price: float
+    weight_variant: Optional[str] = None
 
 
 class BulkOrderSchema(Schema):
@@ -42,6 +43,7 @@ class OrderItemCreateSchema(Schema):
     product_id: int
     quantity: int
     price: float
+    weight_variant: Optional[str] = None
 
 
 class OrderItemUpdateSchema(Schema):
