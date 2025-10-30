@@ -15,24 +15,29 @@ class Migration(migrations.Migration):
             name='weight_variant',
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
-        migrations.CreateModel(
-            name='APILog',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('endpoint', models.CharField(max_length=255)),
-                ('method', models.CharField(max_length=10)),
-                ('status_code', models.IntegerField(blank=True, null=True)),
-                ('response_time_ms', models.IntegerField(blank=True, null=True)),
-                ('user_id', models.IntegerField(blank=True, null=True)),
-                ('error_message', models.TextField(blank=True, null=True)),
-                ('request_body', models.TextField(blank=True, null=True)),
-                ('response_body', models.TextField(blank=True, null=True)),
-                ('ip_address', models.CharField(blank=True, max_length=45, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.CreateModel(
+                    name='APILog',
+                    fields=[
+                        ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('endpoint', models.CharField(max_length=255)),
+                        ('method', models.CharField(max_length=10)),
+                        ('status_code', models.IntegerField(blank=True, null=True)),
+                        ('response_time_ms', models.IntegerField(blank=True, null=True)),
+                        ('user_id', models.IntegerField(blank=True, null=True)),
+                        ('error_message', models.TextField(blank=True, null=True)),
+                        ('request_body', models.TextField(blank=True, null=True)),
+                        ('response_body', models.TextField(blank=True, null=True)),
+                        ('ip_address', models.CharField(blank=True, max_length=45, null=True)),
+                        ('created_at', models.DateTimeField(auto_now_add=True)),
+                    ],
+                    options={
+                        'ordering': ['-created_at'],
+                        'indexes': [models.Index(fields=['-created_at'], name='HCOrder_api_created_54174c_idx'), models.Index(fields=['endpoint'], name='HCOrder_api_endpoin_5e0514_idx'), models.Index(fields=['status_code'], name='HCOrder_api_status__06fc8d_idx')],
+                    },
+                ),
             ],
-            options={
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['-created_at'], name='HCOrder_api_created_54174c_idx'), models.Index(fields=['endpoint'], name='HCOrder_api_endpoin_5e0514_idx'), models.Index(fields=['status_code'], name='HCOrder_api_status__06fc8d_idx')],
-            },
         ),
     ]
