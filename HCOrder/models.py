@@ -99,19 +99,14 @@ class OrderStatusHistory(models.Model):
 
 
 # Auto-log status transitions without actor/reason (those can be supplied by views where available)
-from django.db.models.signals import pre_save
+from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 
 
 @receiver(pre_save, sender=Order)
 def log_order_status_change(sender, instance: Order, **kwargs):
+    # Only handle transitions for existing orders in pre_save
     if not instance.pk:
-        # New order, log creation as pending -> current if different
-        OrderStatusHistory.objects.create(
-            order=instance,
-            from_status=None,
-            to_status=instance.status,
-        )
         return
 
     try:
@@ -123,6 +118,16 @@ def log_order_status_change(sender, instance: Order, **kwargs):
         OrderStatusHistory.objects.create(
             order=instance,
             from_status=previous.status,
+            to_status=instance.status,
+        )
+
+
+@receiver(post_save, sender=Order)
+def log_order_creation(sender, instance: Order, created: bool, **kwargs):
+    if created:
+        OrderStatusHistory.objects.create(
+            order=instance,
+            from_status=None,
             to_status=instance.status,
         )
 
