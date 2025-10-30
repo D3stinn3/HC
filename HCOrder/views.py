@@ -178,8 +178,19 @@ def list_orders(request,
     Return orders with server-side pagination and common filters.
     """
     # Only include orders that have at least one successful payment
-    # Use case-insensitive match to tolerate legacy data like 'Success'
-    paid_order_ids = Payment.objects.filter(payment_status__iexact='success').values_list('order_id', flat=True)
+    # Accept either:
+    #  - payment_status ILIKE 'success' (canonical path)
+    #  - OR paystack_response text contains a successful status (fallback for rows stuck in 'pending')
+    from django.db.models import Q
+    paid_order_ids = (
+        Payment.objects
+        .filter(
+            Q(payment_status__iexact='success') |
+            Q(paystack_response__icontains='"status": "success"') |
+            Q(verified_at__isnull=False)
+        )
+        .values_list('order_id', flat=True)
+    )
     qs = (
         Order.objects
         .select_related("user")
@@ -939,8 +950,24 @@ def verify_payment(request, payload: PaymentVerifySchema):
                 "message": "No reference found in webhook data"
             }, status=400)
 
-        # Get payment by reference
-        payment = get_object_or_404(Payment, paystack_reference=reference)
+        # Get or create payment by reference (some flows may not pre-create)
+        payment = Payment.objects.filter(paystack_reference=reference).first()
+        if not payment:
+            # Derive fields from payload
+            meta = data.get('metadata') or {}
+            order_id_meta = meta.get('order_id')
+            order = get_object_or_404(Order, id=int(order_id_meta)) if order_id_meta else None
+            amount_kobo = data.get('amount')
+            amount = float(amount_kobo) / 100.0 if isinstance(amount_kobo, (int, float)) else 0.0
+            payment = Payment.objects.create(
+                order=order if order else get_object_or_404(Order, id=int(meta.get('order_id'))),
+                clerk_id=meta.get('clerk_id'),
+                paystack_reference=reference,
+                paystack_transaction_id=transaction_id,
+                amount_paid=amount,
+                currency=data.get('currency') or 'KES',
+                payment_status='pending'
+            )
         
         # Store full Paystack response
         payment.set_paystack_response(data)
