@@ -39,9 +39,18 @@ def log_api_call(func):
                 status_code = response.status_code
             if hasattr(response, 'content'):
                 try:
-                    response_body = response.content.decode('utf-8')[:2000]  # Limit size
+                    if isinstance(response.content, bytes):
+                        response_body = response.content.decode('utf-8')[:2000]  # Limit size
+                    else:
+                        response_body = str(response.content)[:2000]
                 except:
                     response_body = str(response.content)[:2000]
+            elif hasattr(response, 'getvalue'):
+                # Handle StringIO and similar
+                try:
+                    response_body = response.getvalue().decode('utf-8')[:2000] if isinstance(response.getvalue(), bytes) else str(response.getvalue())[:2000]
+                except:
+                    response_body = str(response)[:2000]
             response_time_ms = int((time.time() - start_time) * 1000)
             
             APILog.objects.create(

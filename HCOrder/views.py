@@ -177,12 +177,14 @@ def list_orders(request,
     """
     Return orders with server-side pagination and common filters.
     """
-    # Only include orders with a successful payment by default
+    # Only include orders that have at least one successful payment
+    # Use case-insensitive match to tolerate legacy data like 'Success'
+    paid_order_ids = Payment.objects.filter(payment_status__iexact='success').values_list('order_id', flat=True)
     qs = (
         Order.objects
         .select_related("user")
         .prefetch_related("items__product")
-        .filter(payments__payment_status='success')
+        .filter(id__in=list(paid_order_ids))
         .order_by("-created_at")
         .distinct()
     )
