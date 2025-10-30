@@ -13,7 +13,7 @@ class Order(models.Model):
         ('delivered', 'Delivered'),
         ('cancelled', 'Cancelled'),
         ('refunded', 'Refunded'),
-    ]
+    ] 
 
     user = models.ForeignKey(HomeChoiceUser, on_delete=models.CASCADE, related_name='orders')
     payment = models.ForeignKey('Payment', on_delete=models.SET_NULL, related_name='orders', null=True, blank=True)
