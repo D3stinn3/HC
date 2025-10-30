@@ -13,6 +13,7 @@ class BulkOrderSchema(Schema):
     cart_items: List[OrderItemSchema]
     total_amount: float
     status: Optional[str] = "pending"
+    shipping_address: Optional[str] = None
 
 
 class OrderSchema(Schema):
