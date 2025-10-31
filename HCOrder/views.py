@@ -8,7 +8,7 @@ from typing import Optional
 from datetime import datetime
 from django.utils import timezone
 from django.core.paginator import Paginator
-from django.db.models import Sum
+from django.db.models import Sum, Count, Q
 import requests
 import json
 from decouple import config
@@ -314,6 +314,62 @@ def orders_stats(request):
         }
     })
 
+
+"""Customers spend summary (admin)"""
+
+@api.get("/customers/spend", tags=["admin"])
+def customers_spend(request, page: int = 1, page_size: int = 50):
+    if not require_staff(request):
+        return JsonResponse({"success": False, "message": "Forbidden"}, status=403)
+
+    # Successful payments definition aligned with other endpoints
+    successful_payments = (
+        Payment.objects
+        .filter(
+            Q(payment_status__iexact='success') |
+            Q(verified_at__isnull=False) |
+            Q(paystack_response__icontains='"status": "success"')
+        )
+    )
+
+    # Aggregate per customer (user)
+    aggregates = (
+        successful_payments
+        .values(
+            'order__user__id',
+            'order__user__username',
+            'order__user__email',
+        )
+        .annotate(
+            total_spent=Sum('amount_paid'),
+            payments_count=Count('id'),
+            orders_count=Count('order', distinct=True),
+        )
+        .order_by('-total_spent')
+    )
+
+    paginator = Paginator(list(aggregates), page_size)
+    page_obj = paginator.get_page(page)
+
+    data = []
+    for row in page_obj.object_list:
+        data.append({
+            "user_id": row['order__user__id'],
+            "username": row.get('order__user__username'),
+            "email": row.get('order__user__email'),
+            "total_spent": float(row['total_spent'] or 0),
+            "payments_count": row['payments_count'],
+            "orders_count": row['orders_count'],
+        })
+
+    return JsonResponse({
+        "success": True,
+        "page": page_obj.number,
+        "page_size": page_obj.paginator.per_page,
+        "total_pages": page_obj.paginator.num_pages,
+        "total_items": page_obj.paginator.count,
+        "data": data,
+    })
 
 """Set Order Status with reason (admin)"""
 
