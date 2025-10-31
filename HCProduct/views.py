@@ -327,7 +327,7 @@ def get_products_by_category(request, category_slug: str):
         {
             "id": product.id,
             "product_name": product.product_name,
-            "product_image": product.product_image.url if product.product_image else None,
+            "product_image": default_storage.url(product.product_image) if product.product_image else None,
             "product_description": product.product_description,
             "product_price": product.product_price,
             "product_upcoming": product.product_upcoming,
@@ -373,7 +373,7 @@ def get_product_by_variant(request, variant_id: int):
         "id": product.id,
         "product_name": product.product_name,
         "product_category": product.product_category.category_name if product.product_category else None,
-        "product_image": product.product_image.url if product.product_image else None,
+        "product_image": default_storage.url(product.product_image) if product.product_image else None,
         "product_description": product.product_description,
         "product_price": product.product_price,
         "product_upcoming": product.product_upcoming,
