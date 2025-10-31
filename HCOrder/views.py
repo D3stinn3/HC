@@ -290,6 +290,19 @@ def orders_stats(request):
         day = o.created_at.date().isoformat()
         daily[day] = daily.get(day, 0.0) + amt
 
+    # Override the 'paid' count to be based on successful payments in last 30 days
+    from django.db.models import Q
+    paid_payments_qs = (
+        Payment.objects
+        .filter(created_at__gte=start)
+        .filter(
+            Q(payment_status__iexact='success') |
+            Q(verified_at__isnull=False) |
+            Q(paystack_response__icontains='"status": "success"')
+        )
+    )
+    status_counts['paid'] = paid_payments_qs.count()
+
     series = sorted([{ 'date': d, 'revenue': v } for d, v in daily.items()], key=lambda x: x['date'])
 
     return JsonResponse({
