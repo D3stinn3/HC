@@ -385,7 +385,7 @@ def get_product_by_variant(request, variant_id: int):
 """Create Product"""
 
 @api.post("/products", tags=["products"])
-def create_product(request, payload: ProductSchema, file: Optional[UploadedFile] = None):
+def create_product(request, payload: ProductSchema, file: Optional[UploadedFile] = File(None)):
     """
     Create a new product with an image uploaded to AWS S3.
     """
