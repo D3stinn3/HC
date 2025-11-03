@@ -20,7 +20,7 @@ class ProductCreateSchema(Schema):
     """
     Input schema for creating/updating a Product (excludes product_image which is uploaded as file)
     """
-    product_category_id: Optional[int]
+    product_category_id: Optional[int] = None
     product_name: str
     product_description: Optional[str] = None
     product_price: float
