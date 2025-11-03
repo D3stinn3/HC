@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.shortcuts import render
 from ninja_extra import NinjaExtraAPI, api_controller, http_get
 from ninja_extra.permissions import IsAuthenticated
-from .schemas import ProductSchema, ProductVariantSchema, CategorySchema,ProductDetailsSchema, ProductDiscountSchema, CouponSchema
+from .schemas import ProductSchema, ProductCreateSchema, ProductVariantSchema, CategorySchema,ProductDetailsSchema, ProductDiscountSchema, CouponSchema
 from HCCart.schemas import CartItemSchema, CartSchema
 from HCProduct.models import Product, Category, ProductVariant, productDetails, ProductDiscount, Coupon
 from HCCart.models import Cart, CartItem
@@ -386,35 +386,11 @@ def get_product_by_variant(request, variant_id: int):
 """Create Product"""
 
 @api.post("/products", tags=["products"])
-def create_product(request, file: Optional[UploadedFile] = File(None)):
+def create_product(request, payload: ProductCreateSchema = Form(...), file: Optional[UploadedFile] = File(None)):
     """
     Create a new product with an image uploaded to AWS S3.
     """
     user = request.user  # Assuming authentication is required
-
-    # Parse payload from FormData (it comes as JSON string in 'payload' field)
-    payload_data = request.POST.get('payload') or (request.data.get('payload') if hasattr(request, 'data') else None)
-    if payload_data:
-        try:
-            if isinstance(payload_data, str):
-                payload_dict = json.loads(payload_data)
-            else:
-                payload_dict = payload_data
-            payload = ProductSchema(**payload_dict)
-        except (json.JSONDecodeError, TypeError, ValueError) as e:
-            return JsonResponse(
-                {"success": False, "message": f"Invalid payload format: {str(e)}"},
-                status=400
-            )
-    else:
-        # Fallback: try to get from request data directly
-        try:
-            payload = ProductSchema(**request.POST.dict())
-        except (TypeError, ValueError) as e:
-            return JsonResponse(
-                {"success": False, "message": f"Invalid request data: {str(e)}"},
-                status=400
-            )
 
     save_path = None
     if file:
@@ -439,35 +415,11 @@ def create_product(request, file: Optional[UploadedFile] = File(None)):
 
 
 @api.put("/products/{product_id}", tags=["products"])
-def update_product(request, product_id: int, file: Optional[UploadedFile] = File(None)):
+def update_product(request, product_id: int, payload: ProductCreateSchema = Form(...), file: Optional[UploadedFile] = File(None)):
     """
     Update an existing product with a new image if provided.
     """
     product = get_object_or_404(Product, id=product_id)
-
-    # Parse payload from FormData (it comes as JSON string in 'payload' field)
-    payload_data = request.POST.get('payload') or (request.data.get('payload') if hasattr(request, 'data') else None)
-    if payload_data:
-        try:
-            if isinstance(payload_data, str):
-                payload_dict = json.loads(payload_data)
-            else:
-                payload_dict = payload_data
-            payload = ProductSchema(**payload_dict)
-        except (json.JSONDecodeError, TypeError, ValueError) as e:
-            return JsonResponse(
-                {"success": False, "message": f"Invalid payload format: {str(e)}"},
-                status=400
-            )
-    else:
-        # Fallback: try to get from request data directly
-        try:
-            payload = ProductSchema(**request.POST.dict())
-        except (TypeError, ValueError) as e:
-            return JsonResponse(
-                {"success": False, "message": f"Invalid request data: {str(e)}"},
-                status=400
-            )
 
     # Update Image on S3 if a new file is provided
     if file:

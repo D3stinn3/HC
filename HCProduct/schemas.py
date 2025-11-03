@@ -16,6 +16,17 @@ class ProductSchema(Schema):
     product_upcoming: Optional[bool] = False
 
 
+class ProductCreateSchema(Schema):
+    """
+    Input schema for creating/updating a Product (excludes product_image which is uploaded as file)
+    """
+    product_category_id: Optional[int]
+    product_name: str
+    product_description: Optional[str] = None
+    product_price: float
+    product_upcoming: Optional[bool] = False
+
+
 class ProductVariantSchema(Schema):
     """
     Schema for Product Variant
