@@ -430,6 +430,27 @@ def update_product(
     """
     product = get_object_or_404(Product, id=product_id)
 
+    # Fallback: if no form fields were parsed (likely JSON request), parse JSON body
+    if (
+        product_category_id is None
+        and product_name is None
+        and product_description is None
+        and product_price is None
+        and product_upcoming is None
+        and not file
+    ):
+        try:
+            body_text = request.body.decode("utf-8") if hasattr(request, "body") else None
+            if body_text:
+                data = json.loads(body_text)
+                product_category_id = data.get("product_category_id", product_category_id)
+                product_name = data.get("product_name", product_name)
+                product_description = data.get("product_description", product_description)
+                product_price = data.get("product_price", product_price)
+                product_upcoming = data.get("product_upcoming", product_upcoming)
+        except Exception:
+            pass
+
     # Update Image on S3 if a new file is provided
     if file:
         file_name = f"products/{request.user.id}/{uuid.uuid4()}_{file.name}"
