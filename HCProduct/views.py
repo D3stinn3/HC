@@ -512,7 +512,7 @@ def delete_product(request, product_id: int):
 
 """Update Product Image Only"""
 
-@api.put("/products/{product_id}/image", tags=["products"])
+@api.post("/products/{product_id}/image", tags=["products"])
 def update_product_image(request, product_id: int, file: Optional[UploadedFile] = File(None)):
     """
     Update only the product image. Expects multipart/form-data with a 'file' field.
