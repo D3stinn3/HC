@@ -510,6 +510,37 @@ def delete_product(request, product_id: int):
     return JsonResponse({"success": True, "message": "Product deleted successfully"})
 
 
+"""Update Product Image Only"""
+
+@api.put("/products/{product_id}/image", tags=["products"])
+def update_product_image(request, product_id: int, file: UploadedFile = File(...)):
+    """
+    Update only the product image. Expects multipart/form-data with a 'file' field.
+    """
+    product = get_object_or_404(Product, id=product_id)
+
+    if not file:
+        return JsonResponse({"success": False, "message": "Image file is required"}, status=400)
+
+    try:
+        file_name = f"products/{request.user.id}/{uuid.uuid4()}_{file.name}"
+        save_path = default_storage.save(file_name, file)
+        product.product_image = save_path
+        product.save()
+
+        image_url = None
+        if getattr(product, "product_image", None) and hasattr(product.product_image, "url"):
+            image_url = product.product_image.url
+
+        return JsonResponse({
+            "success": True,
+            "message": "Product image updated successfully",
+            "data": {"product_id": product.id, "product_image": image_url},
+        })
+    except Exception as e:
+        return JsonResponse({"success": False, "message": f"Failed to update image: {str(e)}"}, status=500)
+
+
 """Create Product Variant API"""
 
 @api.post("/products/{product_id}/variant", tags=["product_variants"])
