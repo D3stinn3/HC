@@ -394,7 +394,8 @@ def create_product(request, payload: ProductCreateSchema = Form(...), file: Opti
 
     save_path = None
     if file:
-        file_name = f"products/{user.id}/{uuid.uuid4()}_{file.name}"
+        owner_segment = str(getattr(user, "id", "") or "public")
+        file_name = f"products/{owner_segment}/{uuid.uuid4()}_{file.name}"
         save_path = default_storage.save(file_name, file)  # Uploads to S3
 
     category = get_object_or_404(Category, id=payload.product_category_id) if payload.product_category_id else None
@@ -423,7 +424,8 @@ def update_product(request, product_id: int, payload: ProductCreateSchema = Form
 
     # Update Image on S3 if a new file is provided
     if file:
-        file_name = f"products/{request.user.id}/{uuid.uuid4()}_{file.name}"
+        owner_segment = str(product_id)
+        file_name = f"products/{owner_segment}/{uuid.uuid4()}_{file.name}"
         save_path = default_storage.save(file_name, file)
         product.product_image = save_path
 
