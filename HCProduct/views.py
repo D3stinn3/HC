@@ -513,14 +513,17 @@ def delete_product(request, product_id: int):
 """Update Product Image Only"""
 
 @api.put("/products/{product_id}/image", tags=["products"])
-def update_product_image(request, product_id: int, file: UploadedFile = File(...)):
+def update_product_image(request, product_id: int, file: Optional[UploadedFile] = File(None)):
     """
     Update only the product image. Expects multipart/form-data with a 'file' field.
     """
     product = get_object_or_404(Product, id=product_id)
 
+    # If typed param not bound, try request.FILES
+    if not file and hasattr(request, "FILES"):
+        file = request.FILES.get("file") or next(iter(request.FILES.values()), None)
     if not file:
-        return JsonResponse({"success": False, "message": "Image file is required"}, status=400)
+        return JsonResponse({"success": False, "message": "Image file is required under 'file' field"}, status=400)
 
     try:
         file_name = f"products/{request.user.id}/{uuid.uuid4()}_{file.name}"
