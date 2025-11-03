@@ -471,7 +471,27 @@ def update_product(
         product.product_upcoming = product_upcoming
     product.save()
 
-    return JsonResponse({"success": True, "message": "Product updated successfully"})
+    # Return updated snapshot including image URL (if set)
+    image_url = None
+    try:
+        if getattr(product, "product_image", None) and hasattr(product.product_image, "url"):
+            image_url = product.product_image.url
+    except Exception:
+        image_url = None
+
+    return JsonResponse({
+        "success": True,
+        "message": "Product updated successfully",
+        "data": {
+            "id": product.id,
+            "product_name": product.product_name,
+            "product_description": product.product_description,
+            "product_price": product.product_price,
+            "product_upcoming": product.product_upcoming,
+            "product_category": product.product_category.id if product.product_category else None,
+            "product_image": image_url,
+        },
+    })
 
 
 """Delete Product"""
