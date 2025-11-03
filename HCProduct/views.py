@@ -451,6 +451,10 @@ def update_product(
         except Exception:
             pass
 
+    # Fallback: if framework binding missed the file, try raw FILES dict
+    if not file and hasattr(request, "FILES"):
+        file = request.FILES.get("file")
+
     # Update Image on S3 if a new file is provided
     if file:
         file_name = f"products/{request.user.id}/{uuid.uuid4()}_{file.name}"
