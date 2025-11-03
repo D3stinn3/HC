@@ -416,7 +416,16 @@ def create_product(request, payload: ProductCreateSchema = Form(...), file: Opti
 
 
 @api.put("/products/{product_id}", tags=["products"])
-def update_product(request, product_id: int, payload: ProductCreateSchema = Form(...), file: Optional[UploadedFile] = File(None)):
+def update_product(
+    request,
+    product_id: int,
+    product_category_id: Optional[int] = Form(None),
+    product_name: Optional[str] = Form(None),
+    product_description: Optional[str] = Form(None),
+    product_price: Optional[float] = Form(None),
+    product_upcoming: Optional[bool] = Form(None),
+    file: Optional[UploadedFile] = File(None),
+):
     """
     Update an existing product with a new image if provided.
     """
@@ -429,14 +438,18 @@ def update_product(request, product_id: int, payload: ProductCreateSchema = Form
         save_path = default_storage.save(file_name, file)
         product.product_image = save_path
 
-    if payload.product_category_id:
-        category = get_object_or_404(Category, id=payload.product_category_id)
+    if product_category_id:
+        category = get_object_or_404(Category, id=product_category_id)
         product.product_category = category
 
-    product.product_name = payload.product_name
-    product.product_description = payload.product_description
-    product.product_price = payload.product_price
-    product.product_upcoming = payload.product_upcoming
+    if product_name is not None:
+        product.product_name = product_name
+    if product_description is not None:
+        product.product_description = product_description
+    if product_price is not None:
+        product.product_price = product_price
+    if product_upcoming is not None:
+        product.product_upcoming = product_upcoming
     product.save()
 
     return JsonResponse({"success": True, "message": "Product updated successfully"})
