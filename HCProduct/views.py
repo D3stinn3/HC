@@ -63,6 +63,7 @@ def get_all_products(request):
         limit = 12
 
     category_query = request.GET.get("category")
+    meatcut_query = request.GET.get("meatCut")
 
     # Base queryset with related data for efficiency
     qs = (
@@ -75,6 +76,9 @@ def get_all_products(request):
     # Optional category name filter (case-insensitive contains)
     if category_query:
         qs = qs.filter(product_category__category_name__icontains=category_query)
+    # Optional meat cut filter from related details
+    if meatcut_query:
+        qs = qs.filter(details__product_meatcut__iexact=str(meatcut_query).strip().lower()).distinct()
 
     total = qs.count()
     items = list(qs[offset : offset + limit])
