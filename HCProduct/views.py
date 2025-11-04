@@ -41,13 +41,46 @@ api.register_controllers(NinjaJWTDefaultController)
 @api.get("/products", tags=["products"])
 def get_all_products(request):
     """
-    Retrieve all products including their details and discounts.
+    Retrieve products with optional pagination and category filtering.
+
+    Query params:
+    - offset: int >= 0 (default 0)
+    - limit:  int in [1, 200] (default 12)
+    - category: str (case-insensitive match on category name)
     """
-    products = Product.objects.prefetch_related('details', 'discounts').select_related('product_category').all()
+    # Parse and clamp query params safely
+    try:
+        raw_offset = request.GET.get("offset", "0")
+        raw_limit = request.GET.get("limit", "12")
+        offset = max(0, int(raw_offset))
+        limit = int(raw_limit)
+        if limit < 1:
+            limit = 1
+        if limit > 200:
+            limit = 200
+    except Exception:
+        offset = 0
+        limit = 12
+
+    category_query = request.GET.get("category")
+
+    # Base queryset with related data for efficiency
+    qs = (
+        Product.objects.prefetch_related("details", "discounts")
+        .select_related("product_category")
+        .all()
+        .order_by("-created_at", "-id")
+    )
+
+    # Optional category name filter (case-insensitive contains)
+    if category_query:
+        qs = qs.filter(product_category__category_name__icontains=category_query)
+
+    total = qs.count()
+    items = list(qs[offset : offset + limit])
 
     product_list = []
-    for product in products:
-        # Fetch related product details
+    for product in items:
         details = product.details.all()
         details_list = [
             {
@@ -61,7 +94,6 @@ def get_all_products(request):
             for detail in details
         ]
 
-        # Fetch related product discounts
         discounts = product.discounts.all()
         discounts_list = [
             {
@@ -75,20 +107,37 @@ def get_all_products(request):
             for discount in discounts
         ]
 
-        product_list.append({
-            "id": product.id,
-            "product_name": product.product_name,
-            "product_category": product.product_category.category_name if product.product_category else None,
-            "product_image": (product.product_image.url if getattr(product, "product_image", None) and hasattr(product.product_image, "url") else (str(product.product_image) if product.product_image else None)),
-            "product_description": product.product_description,
-            "product_price": product.product_price,
-            "product_upcoming": product.product_upcoming,
-            "created_at": product.created_at,
-            "details": details_list,
-            "discounts": discounts_list,
-        })
+        product_list.append(
+            {
+                "id": product.id,
+                "product_name": product.product_name,
+                "product_category": product.product_category.category_name if product.product_category else None,
+                "product_image": (
+                    product.product_image.url
+                    if getattr(product, "product_image", None) and hasattr(product.product_image, "url")
+                    else (str(product.product_image) if product.product_image else None)
+                ),
+                "product_description": product.product_description,
+                "product_price": product.product_price,
+                "product_upcoming": product.product_upcoming,
+                "created_at": product.created_at,
+                "details": details_list,
+                "discounts": discounts_list,
+            }
+        )
 
-    return JsonResponse({"success": True, "data": product_list})
+    response = JsonResponse(
+        {
+            "success": True,
+            "data": product_list,
+            "offset": offset,
+            "limit": limit,
+            "total": total,
+        }
+    )
+    # Cache for 60s and allow shared caches to serve stale for 5 minutes while revalidating
+    response["Cache-Control"] = "public, max-age=0, s-maxage=60, stale-while-revalidate=300"
+    return response
 
 
 """Get Products By ID"""
