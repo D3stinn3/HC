@@ -105,7 +105,8 @@ def get_all_orders(request):
             "order_date": order.order_date,
             "order_time": order.order_time,
             "created_at": order.created_at,
-            "items": items
+            "items": items,
+            "contact_number": order.user.contact_number or order.user.phone_number,
         })
     
     return JsonResponse({"success": True, "data": data})
@@ -255,6 +256,7 @@ def list_orders(request,
             "shipping_address": order.shipping_address,
             "billing_address": order.billing_address,
             "items": order_items,
+            "contact_number": order.user.contact_number or order.user.phone_number,
         })
 
     return JsonResponse({
@@ -416,7 +418,7 @@ def get_order_by_id(request, order_id: int):
     """
     Retrieve a single order by its ID.
     """
-    order = get_object_or_404(Order.objects.prefetch_related("items__product"), id=order_id)
+    order = get_object_or_404(Order.objects.select_related("user").prefetch_related("items__product"), id=order_id)
     
     items = []
     for item in order.items.all():
@@ -440,7 +442,8 @@ def get_order_by_id(request, order_id: int):
             "order_date": order.order_date,
             "order_time": order.order_time,
             "created_at": order.created_at,
-            "items": items
+            "items": items,
+            "contact_number": order.user.contact_number or order.user.phone_number,
         }
     })
 
