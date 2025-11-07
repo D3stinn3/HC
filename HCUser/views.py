@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from ninja_extra import NinjaExtraAPI, api_controller, http_get
 from ninja_extra.permissions import IsAuthenticated
-from .schemas import SignupSchema, ResponseSchema, LoginSchema, StaffUpdateSchema
+from .schemas import SignupSchema, ResponseSchema, LoginSchema, StaffUpdateSchema, ContactNumberSchema
 from .models import HomeChoiceUser
 from django.contrib.auth import authenticate, logout, login
 from ninja_jwt.controller import NinjaJWTDefaultController
@@ -221,6 +221,85 @@ def user_logout(request):
         return JsonResponse({"success": True, "message": "Logout successful. CSRF token removed."})
 
     return JsonResponse({"success": False, "message": "User is not authenticated."}, status=401)
+
+
+"""User contact number management"""
+
+
+def _ensure_authenticated_user(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({"success": False, "message": "Mtumiaji hajathibitishwa."}, status=401)
+    return None
+
+
+@api.get("/user/contact-number", response=ResponseSchema, tags=["user"], auth=JWTAuth())
+def get_contact_number(request):
+    auth_error = _ensure_authenticated_user(request)
+    if auth_error:
+        return auth_error
+
+    user = request.user
+    return JsonResponse({
+        "success": True,
+        "message": "Nambari ya mawasiliano imerudishwa kwa mafanikio.",
+        "data": {"contact_number": user.contact_number},
+    })
+
+
+@api.post("/user/contact-number", response=ResponseSchema, tags=["user"], auth=JWTAuth())
+def add_contact_number(request, payload: ContactNumberSchema):
+    auth_error = _ensure_authenticated_user(request)
+    if auth_error:
+        return auth_error
+
+    user = request.user
+    if user.contact_number:
+        return JsonResponse({
+            "success": False,
+            "message": "Nambari tayari ipo, tumia usasishaji badala yake.",
+        }, status=400)
+
+    user.contact_number = payload.contact_number
+    user.save(update_fields=["contact_number"])
+
+    return JsonResponse({
+        "success": True,
+        "message": "Nambari imeongezwa kwa mafanikio.",
+        "data": {"contact_number": user.contact_number},
+    })
+
+
+@api.put("/user/contact-number", response=ResponseSchema, tags=["user"], auth=JWTAuth())
+def update_contact_number(request, payload: ContactNumberSchema):
+    auth_error = _ensure_authenticated_user(request)
+    if auth_error:
+        return auth_error
+
+    user = request.user
+    user.contact_number = payload.contact_number
+    user.save(update_fields=["contact_number"])
+
+    return JsonResponse({
+        "success": True,
+        "message": "Nambari imesasishwa kwa mafanikio.",
+        "data": {"contact_number": user.contact_number},
+    })
+
+
+@api.delete("/user/contact-number", response=ResponseSchema, tags=["user"], auth=JWTAuth())
+def delete_contact_number(request):
+    auth_error = _ensure_authenticated_user(request)
+    if auth_error:
+        return auth_error
+
+    user = request.user
+    user.contact_number = None
+    user.save(update_fields=["contact_number"])
+
+    return JsonResponse({
+        "success": True,
+        "message": "Nambari imeondolewa kwa mafanikio.",
+    })
 
 
 """Admin role sync (from Clerk webhook via admin app)"""

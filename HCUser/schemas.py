@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Any, Optional, List, Dict
 
 
@@ -23,3 +23,14 @@ class SignupSchema(BaseModel):
 class StaffUpdateSchema(BaseModel):
     clerk_id: str
     is_staff: bool
+
+
+class ContactNumberSchema(BaseModel):
+    contact_number: str
+
+    @field_validator("contact_number")
+    @classmethod
+    def validate_contact_number(cls, value: str) -> str:
+        if not value.startswith("+254") or len(value) != 13 or not value[1:].isdigit():
+            raise ValueError("Nambari lazima ianze na +254 na iwe na tarakimu 9 za ziada.")
+        return value

@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.validators import RegexValidator
 from .utils.image_util import upload_to
 from django.contrib.auth.models import AbstractUser
 from django.urls import reverse
@@ -10,6 +11,18 @@ class HomeChoiceUser(AbstractUser):
     email = models.EmailField(max_length=255, unique=True)
     avatar = models.ImageField(upload_to=upload_to, null=True, blank=True)
     phone_number = models.CharField(max_length=20, null=True, blank=True)
+    contact_number = models.CharField(
+        max_length=13,
+        null=True,
+        blank=True,
+        validators=[
+            RegexValidator(
+                regex=r"^\+254\d{9}$",
+                message="Nambari ya mawasiliano lazima ianze na +254 na iwe na jumla ya tarakimu 13."
+            )
+        ],
+        help_text="Nambari ya mawasiliano ya Kenya inayoanza na +254."
+    )
     biography = models.CharField(max_length=255, null=True, blank=True)
     address = models.CharField(max_length=255, null=True, blank=True)
     clerkId = models.CharField(max_length=255, null=True, blank=True)
