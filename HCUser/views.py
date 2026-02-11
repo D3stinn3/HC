@@ -228,7 +228,7 @@ def user_logout(request):
 
 def _ensure_authenticated_user(request):
     if not request.user.is_authenticated:
-        return JsonResponse({"success": False, "message": "Mtumiaji hajathibitishwa."}, status=401)
+        return JsonResponse({"success": False, "message": "User is not authenticated."}, status=401)
     return None
 
 
@@ -241,7 +241,7 @@ def get_contact_number(request):
     user = request.user
     return JsonResponse({
         "success": True,
-        "message": "Nambari ya mawasiliano imerudishwa kwa mafanikio.",
+        "message": "Contact number retrieved successfully.",
         "data": {"contact_number": user.contact_number},
     })
 
@@ -256,7 +256,7 @@ def add_contact_number(request, payload: ContactNumberSchema):
     if user.contact_number:
         return JsonResponse({
             "success": False,
-            "message": "Nambari tayari ipo, tumia usasishaji badala yake.",
+            "message": "Number already exists, use update instead.",
         }, status=400)
 
     user.contact_number = payload.contact_number
@@ -264,7 +264,7 @@ def add_contact_number(request, payload: ContactNumberSchema):
 
     return JsonResponse({
         "success": True,
-        "message": "Nambari imeongezwa kwa mafanikio.",
+        "message": "Number added successfully.",
         "data": {"contact_number": user.contact_number},
     })
 
@@ -281,7 +281,7 @@ def update_contact_number(request, payload: ContactNumberSchema):
 
     return JsonResponse({
         "success": True,
-        "message": "Nambari imesasishwa kwa mafanikio.",
+        "message": "Number updated successfully.",
         "data": {"contact_number": user.contact_number},
     })
 
@@ -298,7 +298,7 @@ def delete_contact_number(request):
 
     return JsonResponse({
         "success": True,
-        "message": "Nambari imeondolewa kwa mafanikio.",
+        "message": "Number removed successfully.",
     })
 
 

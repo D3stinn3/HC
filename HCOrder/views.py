@@ -466,6 +466,7 @@ def create_order(request, payload: BulkOrderSchema):
             total_amount=payload.total_amount,
             status=payload.status or 'pending',
             shipping_address=payload.shipping_address or None,
+            delivery_fee=payload.delivery_fee or 0,
             order_date=timezone.now().date(),
             order_time=timezone.now().time()
         )

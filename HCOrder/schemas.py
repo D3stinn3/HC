@@ -14,6 +14,7 @@ class BulkOrderSchema(Schema):
     total_amount: float
     status: Optional[str] = "pending"
     shipping_address: Optional[str] = None
+    delivery_fee: Optional[float] = 0
 
 
 class OrderSchema(Schema):

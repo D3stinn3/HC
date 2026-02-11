@@ -22,6 +22,7 @@ class Order(models.Model):
     # Address snapshots captured at checkout time to avoid drift
     shipping_address = models.TextField(null=True, blank=True)
     billing_address = models.TextField(null=True, blank=True)
+    delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     order_date = models.DateField(default=timezone.now)
     order_time = models.TimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)

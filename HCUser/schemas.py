@@ -32,5 +32,5 @@ class ContactNumberSchema(BaseModel):
     @classmethod
     def validate_contact_number(cls, value: str) -> str:
         if not value.startswith("+254") or len(value) != 13 or not value[1:].isdigit():
-            raise ValueError("Nambari lazima ianze na +254 na iwe na tarakimu 9 za ziada.")
+            raise ValueError("Number must start with +254 and have 9 additional digits.")
         return value

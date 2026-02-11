@@ -18,10 +18,10 @@ class HomeChoiceUser(AbstractUser):
         validators=[
             RegexValidator(
                 regex=r"^\+254\d{9}$",
-                message="Nambari ya mawasiliano lazima ianze na +254 na iwe na jumla ya tarakimu 13."
+                message="Contact number must start with +254 and be 13 digits total."
             )
         ],
-        help_text="Nambari ya mawasiliano ya Kenya inayoanza na +254."
+        help_text="Kenyan contact number starting with +254."
     )
     biography = models.CharField(max_length=255, null=True, blank=True)
     address = models.CharField(max_length=255, null=True, blank=True)
